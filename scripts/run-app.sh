@@ -60,7 +60,7 @@ export DISPLAY=":0"                      # the shim ignores this, Xt needs it se
 _cde_libpath="$CDE_PREFIX/lib:$CDE_ROOT/lib${CDE_BUILD:+:$CDE_BUILD/exports/lib}"
 export LD_LIBRARY_PATH="$_cde_libpath${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export PATH="$CDE_ROOT/bin:$CDE_PREFIX/bin:$PATH"
-export XENVIRONMENT="$PROJECT_ROOT/config/Xresources"
+export XENVIRONMENT="${XENVIRONMENT:-$PROJECT_ROOT/config/Xresources}"
 
 log "running $app_path $*"
 "$app_path" "$@" >"$runtime/app.out" 2>"$runtime/app.err" &

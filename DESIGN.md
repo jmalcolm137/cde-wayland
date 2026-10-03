@@ -341,6 +341,27 @@ just its function surface.  Anywhere CDE reads a struct field or a string that
 Xlib guarantees to be X-shaped, the shim has to produce an X-shaped value even
 though the transport is Wayland.
 
+The same session also fixed a second shim bug behind **dtterm's terminal grid
+rendering only ~20 of every 80 columns**.  Two things were involved:
+
+* **In the shim** (`a8c2a3e`): `XmbTextExtents` and `XwcTextExtents` filled
+  `logical` with `*logical = *ink` after filling `ink` only when non-NULL.
+  `ink` is optional — DtTerm calls `XwcTextExtents(fs, s, n, NULL, &ext)`
+  — so the font-set path crashed with a NULL dereference.  Both outputs are
+  now filled independently.
+* **In the configuration** (`config/Xresources`): DtTerm only uses that
+  font-set path when Motif gives it an `XmFONT_IS_FONTSET` entry.  With a
+  plain `*fontList` font, DtTerm takes its single-font path and, in a
+  multibyte locale, passes a **wide-character** buffer to `XDrawImageString`,
+  which counts bytes — so only `len/4` glyphs appear.  CDE's own
+  `sys.resources` avoids this by specifying `*userFont` with Motif's
+  trailing-colon fontset syntax; we now ship the same in `Xresources`.
+
+This is also the first case where the fix was not purely in the shim: the
+shim bug had to be fixed *and* the missing CDE resource supplied.  Running in
+the `C` locale masked the second half entirely (`MB_CUR_MAX == 1` uses byte
+storage), which is why it took a while to isolate.
+
 ---
 
 ## 8. Runtime environment, resources and locales

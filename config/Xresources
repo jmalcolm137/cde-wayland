@@ -21,6 +21,15 @@
 *fontList: -*-helvetica-medium-r-normal--14-*-*-*-*-*-iso8859-1
 *XmText*fontList: -*-courier-medium-r-normal--14-*-*-*-*-*-iso8859-1
 
+! DtTerm's terminal font must be a *fontset*, not a plain font.  In a
+! multibyte locale DtTerm stores wide characters; if Motif hands it a plain
+! font it takes the single-font XDrawImageString path and only len/4 glyphs
+! appear.  Motif's trailing-colon syntax (as used by CDE's own
+! sys.resources: `*userFont: ...:^*XmText*FontList`) selects
+! XmFONT_IS_FONTSET, so the widget uses Xwc/Xmb instead.
+*userFont: -misc-fixed-medium-r-normal--14-*-*-*-*-*-iso8859-1:
+*userBoldFont: -misc-fixed-bold-r-normal--14-*-*-*-*-*-iso8859-1:
+
 ! Motif widget colours close to the CDE defaults.
 *XmList.selectColor:		#0f3977
 *XmList.selectBackground:	#0f3977
