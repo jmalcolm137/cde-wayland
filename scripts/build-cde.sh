@@ -1,0 +1,189 @@
+#!/usr/bin/env bash
+# build-cde.sh — build CDE (the imake tree) against the Wayland libX11 shim.
+#
+# The pristine CDE source is never modified: we rsync it into $CDE_BUILD and do
+# all work there.  The only CDE "configuration" is host.def (imake's sanctioned
+# local-config file), generated from config/cde-host.def.in.
+#
+# Usage:
+#   build-cde.sh [--refresh] [--prefix=DIR] [STAGE...]
+#
+# Stages (default: libs):
+#   prepare     rsync source -> build tree, write host.def
+#   imake       build CDE's bundled imake (unless a system imake exists)
+#   makefiles   run imake to generate Makefiles everywhere
+#   includes    install CDE headers into the build tree
+#   libs        build include/ and lib/
+#   programs    build the leaf applications that work without dtsession
+#   install     install what has been built into $CDE_ROOT
+#   all         prepare imake makefiles includes libs
+set -euo pipefail
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/lib.sh"
+
+REFRESH=0
+STAGES=()
+for arg in "$@"; do
+    case "$arg" in
+        --refresh)  REFRESH=1 ;;
+        --prefix=*) CDE_PREFIX="${arg#*=}"; export CDE_PREFIX
+                    CDE_ROOT="$CDE_PREFIX/dt"; export CDE_ROOT ;;
+        -h|--help)  sed -n '2,28p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -*)         die "unknown option: $arg" ;;
+        *)          STAGES+=("$arg") ;;
+    esac
+done
+[ "${#STAGES[@]}" -eq 0 ] && STAGES=(libs)
+
+# The lkujaw/cde repository root contains the CDE tree in a `cde/` subdirectory.
+CDE_TREE="$CDE_SRC"
+[ -d "$CDE_TREE/cde" ] && CDE_TREE="$CDE_SRC/cde"
+[ -f "$CDE_TREE/Imakefile" ] || die "no CDE Imakefile under $CDE_SRC (run fetch-sources.sh)"
+
+CPP_BIN="${CPP_BIN:-$(command -v /usr/bin/cpp || command -v cpp || true)}"
+[ -n "$CPP_BIN" ] || die "no C preprocessor found"
+
+# Modern GCC made several C89-era diagnostics hard errors.  CDE is K&R-era
+# code and also needs -fcommon (tentative definitions), so we override the
+# vendor CCOPTIONS (-ansi) on the make command line rather than editing CDE.
+CDE_CCOPTIONS="-std=gnu17 -fcommon -Wno-implicit-function-declaration \
+-Wno-int-conversion -Wno-incompatible-pointer-types -Wno-return-mismatch \
+-Wno-implicit-int -Wno-builtin-declaration-mismatch"
+CDE_CXXOPTIONS="-std=gnu++17 -fcommon -fpermissive \
+-Wno-implicit-function-declaration -Wno-int-conversion \
+-Wno-incompatible-pointer-types -Wno-return-mismatch"
+CDE_CDEBUGFLAGS="-O2 -g -fno-strict-aliasing"
+CDE_CXXDEBUGFLAGS="-O2 -g -fno-strict-aliasing"
+
+# Command-line make variables propagate to every recursive make via MAKEFLAGS.
+MAKE_OVERRIDES=(
+    "CCOPTIONS=$CDE_CCOPTIONS"
+    "CXXOPTIONS=$CDE_CXXOPTIONS"
+    "CDEBUGFLAGS=$CDE_CDEBUGFLAGS"
+    "CXXDEBUGFLAGS=$CDE_CXXDEBUGFLAGS"
+)
+
+stage_prepare() {
+    log "preparing CDE build tree"
+    printf '    source : %s\n' "$CDE_TREE"
+    printf '    build  : %s\n' "$CDE_BUILD"
+
+    local rev="unknown"
+    command -v git >/dev/null 2>&1 && rev="$(git -C "$CDE_SRC" rev-parse HEAD 2>/dev/null || echo unknown)"
+
+    if [ "$REFRESH" -eq 1 ] || [ ! -f "$CDE_BUILD/.source-rev" ] || \
+       [ "$(cat "$CDE_BUILD/.source-rev" 2>/dev/null)" != "$rev" ]; then
+        require_cmd rsync
+        mkdir -p "$CDE_BUILD"
+        rsync -a --delete --exclude '.git/' "$CDE_TREE/" "$CDE_BUILD/"
+        printf '%s\n' "$rev" > "$CDE_BUILD/.source-rev"
+    else
+        log "build tree is current ($rev); use --refresh to re-copy"
+    fi
+
+    sed -e "s|@CDE_PREFIX@|$CDE_PREFIX|g" \
+        -e "s|@CDE_ROOT@|$CDE_ROOT|g" \
+        -e "s|@CPP@|$CPP_BIN|g" \
+        "$PROJECT_ROOT/config/cde-host.def.in" > "$CDE_BUILD/config/cf/host.def"
+    ok "host.def written"
+}
+
+IMAKE_BIN=""
+
+# ensure_imake: reuse an existing build, else bootstrap; fall back to a system
+# imake if one is present and the bundled one cannot be built.
+ensure_imake() {
+    if [ -n "$IMAKE_BIN" ] && [ -x "$IMAKE_BIN" ]; then return; fi
+    if [ -x "$CDE_BUILD/config/imake/imake" ]; then
+        IMAKE_BIN="$CDE_BUILD/config/imake/imake"
+        return
+    fi
+    if command -v imake >/dev/null 2>&1; then
+        warn "using system imake: $(command -v imake)"
+        IMAKE_BIN="$(command -v imake)"
+        return
+    fi
+    stage_imake
+}
+
+stage_imake() {
+    log "building CDE's bundled imake"
+    local src="$CDE_BUILD/config/imake"
+    # BOOTSTRAPCFLAGS is exactly how imake's own bootstrap is told where cpp
+    # is; the vendor config hardcodes /lib/cpp, which does not exist here.
+    make -C "$src" -f Makefile.ini clean >/dev/null 2>&1 || true
+    # The inner quotes must reach the compiler as part of the macro's
+    # replacement text (imake.c does `DEFAULT_CPP CPP_PROGRAM`), so escape
+    # them twice: once for make, once for the shell running the recipe.
+    make -C "$src" -f Makefile.ini \
+        CC="${CC:-gcc}" CDEBUGFLAGS="-O2" \
+        BOOTSTRAPCFLAGS="-DCPP_PROGRAM=\\\"$CPP_BIN\\\"" 2>&1 | sed 's/^/    /'
+    IMAKE_BIN="$src/imake"
+    [ -x "$IMAKE_BIN" ] || die "imake bootstrap failed"
+    ok "imake built at $IMAKE_BIN"
+}
+
+imake_cmd() {
+    # Mirrors the top Makefile's IMAKE_CMD: -I<rulesrc> -DTOPDIR -DCURDIR.
+    "$IMAKE_BIN" -I"$CDE_BUILD/config/cf" -DTOPDIR=. -DCURDIR=. "$@"
+}
+
+stage_makefiles() {
+    ensure_imake
+    log "generating xmakefile and all Makefiles"
+    ( cd "$CDE_BUILD" && imake_cmd -s xmakefile )
+    ( cd "$CDE_BUILD" && make -f xmakefile Makefiles )
+    ok "Makefiles generated"
+}
+
+stage_includes() {
+    log "installing CDE headers"
+    ( cd "$CDE_BUILD" && make "${MAKE_OVERRIDES[@]}" -f xmakefile includes )
+    ok "headers installed"
+}
+
+stage_libs() {
+    log "building CDE base libraries (include/ + lib/)"
+    ( cd "$CDE_BUILD/include" && make "${MAKE_OVERRIDES[@]}" )
+    ( cd "$CDE_BUILD/lib"     && make "${MAKE_OVERRIDES[@]}" -j"$JOBS" )
+    ok "CDE libraries built"
+}
+
+stage_programs() {
+    log "building CDE applications"
+    local prog
+    for prog in dtcalc dtpad dthello dtstyle dtcm dtterm dtfile dthelp; do
+        [ -d "$CDE_BUILD/programs/$prog" ] || continue
+        log "  make -C programs/$prog"
+        ( cd "$CDE_BUILD/programs/$prog" && make "${MAKE_OVERRIDES[@]}" -j"$JOBS" ) \
+            || warn "programs/$prog failed (see the build log above)"
+    done
+}
+
+stage_install() {
+    log "installing CDE into $CDE_ROOT"
+    ( cd "$CDE_BUILD/include" && make "${MAKE_OVERRIDES[@]}" install ) || warn "include install failed"
+    ( cd "$CDE_BUILD/lib"     && make "${MAKE_OVERRIDES[@]}" install ) || warn "lib install failed"
+    ok "install attempted"
+}
+
+log "CDE-on-Wayland build"
+printf '    prefix : %s\n' "$CDE_PREFIX"
+printf '    root   : %s\n' "$CDE_ROOT"
+printf '    cpp    : %s\n' "$CPP_BIN"
+printf '    stages : %s\n' "${STAGES[*]}"
+
+for st in "${STAGES[@]}"; do
+    case "$st" in
+        prepare)   stage_prepare ;;
+        imake)     stage_imake ;;
+        makefiles) stage_makefiles ;;
+        includes)  stage_includes ;;
+        libs)      stage_libs ;;
+        programs)  stage_programs ;;
+        install)   stage_install ;;
+        all)       stage_prepare; stage_imake; stage_makefiles; stage_includes; stage_libs ;;
+        *)         die "unknown stage: $st" ;;
+    esac
+done
+
+ok "done"

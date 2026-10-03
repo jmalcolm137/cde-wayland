@@ -1,0 +1,32 @@
+! CDE-on-Wayland X resources.
+!
+! The shim publishes the root RESOURCE_MANAGER property from the user's
+! ~/.Xresources / ~/.Xdefaults, or from $XENVIRONMENT.  cde-session.sh points
+! XENVIRONMENT here when the user has no resources of their own, so CDE Motif
+! programs get a CDE-ish default look without a running X server.
+!
+! This is a starting point; the real palette will come from CDE's own
+! resources as dtstyle/backdrops are wired up.
+
+*customization:		-color
+
+! CDE's default "grey" workspace and black text.
+*Background:		#aeb2c3
+*Foreground:		#000000
+*highlightColor:	#aeb2c3
+*armColor:		#aeb2c3
+
+! A readable proportional and fixed font; the shim matches these XLFDs through
+! fontconfig and never fails to load a font.
+*fontList: -*-helvetica-medium-r-normal--14-*-*-*-*-*-iso8859-1
+*XmText*fontList: -*-courier-medium-r-normal--14-*-*-*-*-*-iso8859-1
+
+! Motif widget colours close to the CDE defaults.
+*XmList.selectColor:		#0f3977
+*XmList.selectBackground:	#0f3977
+*XmPushButton.background:	#aeb2c3
+*XmPushButton.foreground:	#000000
+*XmToggleButton.selectColor:	#0f3977
+
+! CDE window decorations that the shim maps to CoW/River window hints.
+*XmDialogShell.title:		CDE

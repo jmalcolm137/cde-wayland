@@ -1,0 +1,19 @@
+# Pinned upstream revisions for a reproducible CDE-on-Wayland build.
+# Update deliberately; River and CoW must be protocol-compatible.
+
+# xlib-wayland — the Wayland libX11 shim.  All shim accommodations for CDE are
+# made in THIS repository, not here; we only consume it.
+XLIB_WAYLAND_REPO=https://github.com/jmalcolm137/xlib-wayland.git
+XLIB_WAYLAND_REF=main
+
+# CDE (imake tree) — default branch `master`.
+CDE_REPO=https://github.com/lkujaw/cde.git
+CDE_REF=master
+
+# CoW window manager (River client) — default branch `main`.
+COW_REPO=https://codeberg.org/cow-wm/cow.git
+COW_REF=main
+
+# River compositor — default branch `main`. The Arch package is 0.4.8.
+RIVER_REPO=https://codeberg.org/river/river.git
+RIVER_REF=main
