@@ -32,15 +32,44 @@ fetch_src "$COW_REPO"   "$COW_REF"   "$COW_SRC"
 fetch_src "$RIVER_REPO" "$RIVER_REF" "$RIVER_SRC"
 
 # ---------------------------------------------------------------------------
-# imake: CDE ships its own bootstrap, so the distro package is only a fallback
-# and a convenience for the non-root case. If `imake` is absent, unpack the
-# distro package into $CDE_PREFIX/tools without root (Arch/most distros).
+# Build tools missing on a minimal/modern host.  We do not require root: on a
+# pacman-based system we unpack the package into $CDE_PREFIX/tools, which the
+# build scripts add to PATH.
 # ---------------------------------------------------------------------------
+
+# rpcgen: CDE generates XDR/RPC stubs at build time (lib/csa, lib/tt).
+ensure_rpcgen() {
+    if command -v rpcgen >/dev/null 2>&1; then
+        ok "system rpcgen found: $(command -v rpcgen)"
+        return 0
+    fi
+    if [ -x "$CDE_PREFIX/tools/rpcgen" ]; then
+        ok "rpcgen already unpacked in $CDE_PREFIX/tools"
+        return 0
+    fi
+    if command -v pacman >/dev/null 2>&1; then
+        local url tmp
+        url="$(pacman -Sp --print-format '%l' rpcsvc-proto 2>/dev/null | head -1)"
+        if [ -n "$url" ]; then
+            log "unpacking rpcsvc-proto (rpcgen) into $CDE_PREFIX/tools"
+            tmp="$(mktemp -d)"
+            curl -fsSL "$url" -o "$tmp/pkg.zst"
+            tar --zstd -xf "$tmp/pkg.zst" -C "$tmp"
+            mkdir -p "$CDE_PREFIX/tools"
+            cp -a "$tmp/usr/bin/." "$CDE_PREFIX/tools/" 2>/dev/null || true
+            rm -rf "$tmp"
+            [ -x "$CDE_PREFIX/tools/rpcgen" ] && ok "rpcgen unpacked" && return 0
+        fi
+    fi
+    warn "rpcgen not found and could not be unpacked automatically."
+    warn "Install it (Arch: rpcsvc-proto) before build-cde.sh."
+}
+
 if command -v imake >/dev/null 2>&1; then
     ok "system imake found: $(command -v imake)"
 else
-    warn "no system imake; CDE's bundled imake will be bootstrapped instead."
-    warn "build-cde.sh handles this automatically."
+    ok "no system imake; CDE's bundled imake will be bootstrapped (build-cde.sh)."
 fi
 
+ensure_rpcgen
 ok "sources ready"

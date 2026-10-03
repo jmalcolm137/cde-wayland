@@ -37,8 +37,8 @@ place; the CDE build is being brought up. See [DESIGN.md §9](DESIGN.md#9-milest
 | M | Scope | State |
 |---|---|---|
 | M0 | repo + fetch + shim + CoW/River build | 🚧 in progress |
-| M1 | CDE `include/` + `lib/` build unmodified | 🚧 imake + Makefiles + headers done; libraries building |
-| M2 | first CDE app (`dtcalc`/`dtpad`) under headless compositor | ⬜ |
+| M1 | CDE `include/` + `lib/` build unmodified | ✅ **done** — all `libDt*`/`tt`/`csa` link against the shim |
+| M2 | first CDE app (`dtcalc`/`dtpad`) under headless compositor | 🚧 in progress |
 | M3 | core desktop apps (dtterm, dtfile, dtstyle, …) | ⬜ |
 | M4 | real River+CoW session | ⬜ |
 | M5 | CoW panel/theme, backdrops, resources | ⬜ |

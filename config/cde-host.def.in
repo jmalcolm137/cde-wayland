@@ -15,6 +15,8 @@
 #define CdeInstallationTop	@CDE_ROOT@
 #define CdeConfigurationTop	@CDE_ROOT@/config
 #define CdeUserTop		.dt
+#define ProjectRoot		@CDE_ROOT@
+#define CDEProjectRoot		@CDE_ROOT@
 
 /* Find X11 (our shim) and Motif (built against the shim) in our prefix. */
 #define X11ProjectRoot		@CDE_PREFIX@

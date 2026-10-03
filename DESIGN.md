@@ -273,6 +273,13 @@ about **374 Xlib-family functions**; the shim already exports **320** of them.
 The remaining surface is small and concentrated in extensions and rarely used
 entry points. Known gaps:
 
+> **M1 result (measured):** after building every CDE shared library
+> (`libDtSvc`, `libDtWidget`, `libDtHelp`, `libDtSearch`, `libDtPrint`,
+> `libDtTerm`, `libDtMrm`, `libcsa`, `libtt`, `libDtXinerama`) against the shim,
+> the set of undefined Xlib-family symbols they reference (125) is **fully
+> covered by the shim — zero missing**. The extension gaps below apply to the
+> window manager, session and login programs, which we build later.
+
 ### 7.1 Extensions used by specific CDE programs
 
 | Extension | Used by | v1 approach |
