@@ -2,18 +2,22 @@
 # river-init — River's init file for a CDE session (install as
 # ~/.config/river/init, or point river -c at it).
 #
-# River is the compositor; CoW is the window manager running as a River
-# client.  cow-start reads ~/.config/cow/cow.conf and then runs
-# ~/.config/cow/after-start.sh, which starts the CDE session.
+# River is the compositor; CoW is the window manager.  The CDE Front Panel
+# (dtwm, contained) is started by cow's after-start hook, which runs
+# cde-session.sh.
 
 set -eu
 
+: "${CDE_PREFIX:=${HOME}/.local/cde-wayland}"
+_dir="$(cd -- "$(dirname -- "$0")" && pwd -P)"
+if [ -f "$_dir/cde-env.sh" ]; then
+    . "$_dir/cde-env.sh"
+fi
+if [ -f "$CDE_PREFIX/share/cde-wayland/cde-env.sh" ]; then
+    . "$CDE_PREFIX/share/cde-wayland/cde-env.sh"
+fi
+
 : "${XDG_CURRENT_DESKTOP:=CDE}"
 export XDG_CURRENT_DESKTOP
-
-# Keep the toolchain prefix discoverable by CoW and the session script.
-: "${CDE_PREFIX:=${HOME}/.local/cde-wayland}"
-export CDE_PREFIX
-export PATH="${CDE_PREFIX}/bin:${PATH}"
 
 cow-start

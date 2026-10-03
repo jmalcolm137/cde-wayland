@@ -15,6 +15,7 @@
 #   includes    install CDE headers into the build tree
 #   libs        build include/ and lib/
 #   programs    build the leaf applications that work without dtsession
+#   panel       build the real CDE Front Panel (dtwm) + its data + ttsession
 #   install     install what has been built into $CDE_ROOT
 #   all         prepare imake makefiles includes libs
 set -euo pipefail
@@ -176,6 +177,29 @@ stage_programs() {
     done
 }
 
+# The CDE Front Panel is dtwm's; build it (unmodified) plus the panel database
+# and the ToolTalk session daemon it needs.  dtwm runs as a contained panel
+# under CoW, never as the session's window manager (see DESIGN.md §5.2).
+stage_panel() {
+    log "building the real CDE Front Panel (dtwm) and its data"
+    # Remove stale half-generated files: the cpp rules only regenerate a target
+    # that is missing, and an earlier build (before CppCmd was corrected) left
+    # zero-length Dtwm.defs/dtwm.fp behind.
+    rm -f "$CDE_BUILD/programs/dtwm/Dtwm.defs" \
+          "$CDE_BUILD/programs/dtwm/sys.dtwmrc" \
+          "$CDE_BUILD/programs/types/dtwm.fp"
+    local sub
+    for sub in programs/dtwm programs/types lib/tt/bin/ttsession; do
+        [ -d "$CDE_BUILD/$sub" ] || continue
+        log "  make -C $sub"
+        ( cd "$CDE_BUILD/$sub" && make "${MAKE_OVERRIDES[@]}" -j"$JOBS" ) \
+            || warn "$sub failed (see the build log above)"
+    done
+    ok "panel built (dtwm + dtwm.fp + ttsession)"
+    log "installing panel data"
+    "$SCRIPT_DIR/install-panel-data.sh" || warn "panel data install failed"
+}
+
 stage_install() {
     log "installing CDE into $CDE_ROOT"
     ( cd "$CDE_BUILD/include" && make "${MAKE_OVERRIDES[@]}" install ) || warn "include install failed"
@@ -197,6 +221,7 @@ for st in "${STAGES[@]}"; do
         includes)  stage_includes ;;
         libs)      stage_libs ;;
         programs)  stage_programs ;;
+        panel)     stage_panel ;;
         install)   stage_install ;;
         all)       stage_prepare; stage_imake; stage_makefiles; stage_includes; stage_libs ;;
         *)         die "unknown stage: $st" ;;

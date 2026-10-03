@@ -21,6 +21,8 @@ if [ -x "$app" ]; then
     app_path="$app"
 elif [ -x "$CDE_ROOT/bin/$app" ]; then
     app_path="$CDE_ROOT/bin/$app"
+elif [ -x "$CDE_PREFIX/bin/$app" ]; then
+    app_path="$CDE_PREFIX/bin/$app"
 elif command -v "$app" >/dev/null 2>&1; then
     app_path="$(command -v "$app")"
 else

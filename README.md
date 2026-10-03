@@ -41,8 +41,8 @@ See [DESIGN.md §9](DESIGN.md#9-milestones).
 | M0 | repo + fetch + shim + CoW/River build | ✅ shim + Xt/Motif + CoW build (River: install distro package) |
 | M1 | CDE `include/` + `lib/` build unmodified | ✅ **done** — all `libDt*`/`tt`/`csa` link against the shim |
 | M2 | first CDE app (`dtcalc`/`dtpad`) under headless compositor | ✅ **done** — `dtcalc` renders in CDE colours on the shim |
-| M3 | core desktop apps (dtterm, dtfile, dtstyle, …) | 🚧 in progress (dtpad, dtterm, dtfile, dtstyle already build) |
-| M4 | real River+CoW session | ⬜ |
+| M3 | core desktop apps (dtterm, dtfile, dtstyle, …) | 🚧 dtcalc, dtterm, dtpad, dtfile, dtstyle build and run |
+| M4 | real River+CoW session with the CDE Front Panel | 🚧 real `dtwm` panel renders under the shim; CoW/session config written |
 | M5 | CoW panel/theme, backdrops, resources | ⬜ |
 | M6 | cross-process broker (DnD, XSMP) | ⬜ |
 
@@ -60,12 +60,32 @@ scripts/build-cow.sh
 
 # 4. build CDE against the prefix
 scripts/build-cde.sh
+
+# 5. build + install the real CDE Front Panel (dtwm) and its data
+scripts/build-cde.sh panel
 ```
 
 Everything installs relocatably under `$CDE_PREFIX`
 (default `$HOME/.local/cde-wayland`), so no root is required. The shim and the
 Xt/Motif stack install into the same prefix, and CDE installs under
 `$CDE_PREFIX/dt`.
+
+## The CDE Front Panel
+
+CDE's Front Panel is compiled into `dtwm`; there is no standalone panel binary.
+We run the **real, unmodified `dtwm`** as a *contained panel*: because the shim
+gives each process a private X server, dtwm can only ever see and manage its own
+windows, so its window-manager role is inert and cannot touch the CDE apps
+(separate processes) that CoW manages. `scripts/build-cde.sh panel` builds it,
+its front-panel database and icons, and CDE's `ttsession`.
+
+Real CDE's ToolTalk needs a running portmapper, so start it once:
+
+```sh
+sudo systemctl start rpcbind
+```
+
+Then a session is `scripts/run-session.sh` (River + CoW + the panel).
 
 Run one application against the bundled headless compositor:
 

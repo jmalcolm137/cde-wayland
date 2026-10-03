@@ -183,24 +183,37 @@ Target set, in dependency order:
 4. **Desktop shell** — `dtsession` (session/startup); `dtwm` is **not** used as
    the WM.
 
-### 5.2 The Front Panel problem
+### 5.2 The Front Panel: real dtwm as a contained panel
 
-In CDE, the Front Panel and workspace switching live inside `dtwm` (the Desktop
-Window Manager). Since CoW replaces `dtwm`'s WM role, the Front Panel does not
-come along for free. Options, in preference order:
+In CDE the Front Panel is not a separate program; it is compiled into `dtwm`
+(`WmFP.c`, `PanelS.c`, and the `dtwm.fp` database). There is no standalone
+panel binary and no panel-only mode, so the only way to use the *real* Front
+Panel is to run `dtwm` itself.
 
-1. **Use CoW's own panel/launcher** (`cowbuttons`, CoW menus) configured with
-   CDE application entries and a CDE-ish theme. No CDE changes. This is the v1
-   answer.
-2. **A small standalone panel** built from CDE widgets (`libDtWidget`) that
-   drives CoW through `moocow`, reusing CDE's icons and actions. This is a new
-   program in *our* repo, not a CDE patch.
-3. **Last resort:** a minimal patch to `dtwm` to run as a "panel-only" client
-   with WM disabled. Only if 1 and 2 prove insufficient.
+We run stock, unmodified `dtwm` as a **contained panel**:
 
-The same reasoning applies to CDE's desktop backdrop and icon handling: CoW (or
-a tiny Wayland layer-shell helper) owns the root, and CDE's XPM backdrops can be
-displayed by a helper.
+* Because the shim gives every process its own private X server, dtwm only ever
+  sees and manages its own windows. Its window-manager role is therefore inert:
+  it cannot see, frame or move the CDE applications, which are separate
+  processes that **CoW** manages as ordinary Wayland clients.
+* The panel is the only dtwm window that reaches the screen: dtwm's other
+  full-screen windows (the workspace/backdrop overlays) are override-redirect
+  root covers, and the shim deliberately keeps those out of the Wayland tree
+  (otherwise they would appear as giant stray windows). See §7.6.
+
+This needs the pieces CDE normally installs system-wide, all relocated under
+our prefix by `scripts/build-cde.sh panel` + `scripts/install-panel-data.sh`:
+`dtwm`, the `Dtwm` application defaults, the `dtwm.fp` database, the icon
+pixmaps, `sys.dtwmrc`, and the ToolTalk session daemon `ttsession`.
+
+ToolTalk then needs a running portmapper (as real CDE does), so the session
+requires `rpcbind`. The panel itself launches the CDE applications; CoW menus
+and key bindings are provided as a secondary launcher (`config/cow.conf`).
+
+Workspace switching is the one place the panel cannot drive CoW directly: the
+panel's workspace buttons change dtwm's internal state, not CoW's desks. For v1
+CoW owns the desks and the panel's workspace row is cosmetic; wiring the
+buttons to `moocow` is a follow-up.
 
 ### 5.3 Session startup
 
@@ -361,6 +374,32 @@ This is also the first case where the fix was not purely in the shim: the
 shim bug had to be fixed *and* the missing CDE resource supplied.  Running in
 the `C` locale masked the second half entirely (`MB_CUR_MAX == 1` uses byte
 storage), which is why it took a while to isolate.
+
+### 7.6 Findings from the CDE Front Panel (dtwm)
+
+Running the real Front Panel exercised a different corner of the shim:
+
+* **`app_id` and title must come from the client.** The shim reported a constant
+  `app_id = "org.motif.wayland"` and title `"Motif"` for every window, so a
+  window manager could not tell one application from another — nor dtwm's panel
+  from its workspace overlay. Fixed (`6298a9d`): the Wayland `app_id` is taken
+  from `WM_CLASS` (instance, class as fallback) and the title from `WM_NAME`.
+  CoW can now match the panel with `%dtwm` (its WM_CLASS instance).
+* **Override-redirect root covers must stay hidden.** dtwm creates full-screen
+  override-redirect windows for its workspace/backdrop and root input overlays.
+  An attempt to promote root-child override-redirect windows to toplevels (so a
+  hypothetical override-redirect panel would show) surfaced these as giant stray
+  white windows. It was reverted: CDE's actual panel is a *normal* root child
+  and is promoted by the ordinary rule, so the overlays stay out of the Wayland
+  tree.
+* **Panel data paths are compiled in.** `libDtSvc` builds the icon and database
+  search paths from `CDE_INSTALLATION_TOP`, so a build with a different prefix
+  than the one it was compiled with finds neither icons nor `dtwm.fp`. The
+  panel controls then collapse (the panel shrank from ~1015px to ~499px, with
+  empty icon slots). Build everything against one prefix.
+* **CDE's `%|nls-N-#Text#|` labels** are resolved from message catalogs; without
+  the catalogs the wrapper is shown literally. `install-panel-data.sh` resolves
+  them to their embedded default text instead.
 
 ---
 
