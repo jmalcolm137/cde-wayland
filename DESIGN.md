@@ -320,6 +320,27 @@ exercises:
 * Screen saver / idle behaviour (Xss) — decide per app.
 * Session-management surface (XSMP/ICE): out of v1; broker later.
 
+### 7.5 Findings from the first application (dtcalc)
+
+The first real CDE program exposed a shim bug that no earlier client had
+tripped over.  `XOpenDisplay` reported the raw Wayland socket name
+(`wayland-0`) through `Display.display_name` / `XDisplayString`.  Xlib clients
+conventionally parse that string as `host:display.screen`, and CDE's `DtSvc`
+does exactly that in `GetDisplayName` (`SmCreateDirs.c`): it splits on `:` and
+then calls `strlen()` on the remainder, so a colon-less name crashed `dtcalc`
+with `strlen(NULL)` before its first window.
+
+Fixed **upstream in xlib-wayland** (`b9a3142`): `XOpenDisplay` now derives the
+reported name from its argument, then `$DISPLAY`, then a local `:0`, and keeps
+using it as the open-display key.  This is the workflow §6.1 describes: the
+fix lives in the shim repository, and this repository only records the tested
+revision.
+
+The lesson generalises: the shim must imitate Xlib's *observable values*, not
+just its function surface.  Anywhere CDE reads a struct field or a string that
+Xlib guarantees to be X-shaped, the shim has to produce an X-shaped value even
+though the transport is Wayland.
+
 ---
 
 ## 8. Runtime environment, resources and locales

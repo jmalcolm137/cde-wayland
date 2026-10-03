@@ -34,7 +34,7 @@ runtime="$(mktemp -d "${TMPDIR:-/tmp}/cde-hc.XXXXXX")"
 sock="cde-$$"
 out="${CDE_FRAME_OUT:-$PWD/$(basename "$app").png}"
 size="${CDE_FRAME_SIZE:-1024x768}"
-timeout_s="${CDE_FRAME_TIMEOUT:-4}"
+timeout_s="${CDE_FRAME_TIMEOUT:-6}"
 ready="$runtime/ready"
 
 hc_args=(--socket "$sock" --size "$size" --timeout "$timeout_s" --output "$out")
@@ -55,18 +55,24 @@ grep -q READY "$ready" 2>/dev/null || { cat "$runtime/hc.err" >&2; die "composit
 export XDG_RUNTIME_DIR="$runtime"
 export WAYLAND_DISPLAY="$sock"
 export DISPLAY=":0"                      # the shim ignores this, Xt needs it set
-export LD_LIBRARY_PATH="$CDE_PREFIX/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+# Shim + Motif, the installed CDE libs, and (for an uninstalled tree) the
+# build-tree exports.
+_cde_libpath="$CDE_PREFIX/lib:$CDE_ROOT/lib${CDE_BUILD:+:$CDE_BUILD/exports/lib}"
+export LD_LIBRARY_PATH="$_cde_libpath${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 export PATH="$CDE_ROOT/bin:$CDE_PREFIX/bin:$PATH"
 export XENVIRONMENT="$PROJECT_ROOT/config/Xresources"
 
 log "running $app_path $*"
-set +e
-"$app_path" "$@" >"$runtime/app.out" 2>"$runtime/app.err"
-app_rc=$?
-set -e
+"$app_path" "$@" >"$runtime/app.out" 2>"$runtime/app.err" &
+app_pid=$!
 
+# The compositor exits after --timeout having written the frame; the app is a
+# long-lived GUI process, so stop it once the compositor is done.
 wait "$hc_pid" 2>/dev/null || true
+kill "$app_pid" 2>/dev/null || true
+wait "$app_pid" 2>/dev/null || true
+
 [ -f "$out" ] || die "no frame captured (see $runtime/hc.err)"
-ok "frame written to $out (app exit=$app_rc)"
+ok "frame written to $out"
 printf '    app stderr tail:\n' >&2
-tail -5 "$runtime/app.err" >&2 || true
+tail -8 "$runtime/app.err" >&2 || true
