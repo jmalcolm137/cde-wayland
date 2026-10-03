@@ -31,12 +31,14 @@ from this tree.
 
 ## Status
 
-**M0 — harness.** The repository, source fetch, build scripts and design are in
-place; the CDE build is being brought up. See [DESIGN.md §9](DESIGN.md#9-milestones).
+**M2 reached.** Stock CDE `dtcalc` and `dtterm` build unmodified against the
+Wayland libX11 shim and render under the headless compositor; `dtpad`, `dtfile`
+and `dtstyle` also build. The shim and CoW build and install from the harness.
+See [DESIGN.md §9](DESIGN.md#9-milestones).
 
 | M | Scope | State |
 |---|---|---|
-| M0 | repo + fetch + shim + CoW/River build | 🚧 in progress |
+| M0 | repo + fetch + shim + CoW/River build | ✅ shim + Xt/Motif + CoW build (River: install distro package) |
 | M1 | CDE `include/` + `lib/` build unmodified | ✅ **done** — all `libDt*`/`tt`/`csa` link against the shim |
 | M2 | first CDE app (`dtcalc`/`dtpad`) under headless compositor | ✅ **done** — `dtcalc` renders in CDE colours on the shim |
 | M3 | core desktop apps (dtterm, dtfile, dtstyle, …) | 🚧 in progress (dtpad, dtterm, dtfile, dtstyle already build) |
