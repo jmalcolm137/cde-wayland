@@ -27,6 +27,15 @@ if [ -z "${TT_SESSION:-}" ]; then
     log "         run-session.sh starts one with 'ttsession -c'."
 fi
 
+# Calendar Manager service (rpc.cmsd), dtcm's backend.  The patched daemon runs
+# as the user with a private spool directory, so it needs no root; without it
+# dtcm shows "rpc.cmsd is not responding".
+if command -v rpc.cmsd >/dev/null 2>&1; then
+    log "starting the Calendar Manager service (rpc.cmsd)"
+    CDE_CMSD_DIR="${CDE_CMSD_DIR:-$HOME/.calendar}" \
+        rpc.cmsd >/dev/null 2>&1 &
+fi
+
 # The CDE Front Panel (real dtwm, contained).  dtwm skips its own ToolTalk
 # messaging: registering as the workspace/window manager is wrong here (CoW is
 # the WM) and it stopped the Front Panel from being created.

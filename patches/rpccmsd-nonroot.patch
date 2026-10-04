@@ -1,0 +1,157 @@
+--- a/programs/dtcm/server/svcmain.c
++++ b/programs/dtcm/server/svcmain.c
+@@ -211,10 +211,30 @@
+ 
+ 	if (geteuid() != 0)
+ 	{
+-		fprintf (stderr,
+-			"%s: must be run in super-user mode!  Exited.\n",
+-			pgname);
+-		exit (-1);
++		/* cde-wayland: run as an ordinary user with a private spool
++		 * directory instead of the root-owned /var/spool/calendar. */
++		char *over = getenv("CDE_CMSD_DIR");
++
++		if (!over || !*over)
++		{
++			fprintf (stderr,
++				"%s: must be run in super-user mode!  Exited.\n",
++				pgname);
++			exit (-1);
++		}
++		if (stat(over, &info))
++		{
++			if ((errno != ENOENT) || mkdir(over, S_IRWXU))
++			{
++				sprintf(msgbuf, "%s: cannot create %s.\n%s: %s",
++					pgname, over, pgname, "System error");
++				perror (msgbuf);
++				exit (-1);
++			}
++		}
++		if (-1 == chdir (over))
++			perror (strerror(errno));
++		return;
+ 	}
+ 
+ 	create_dir = 0;
+@@ -316,9 +336,13 @@
+ lock_it(void)
+ {
+ 	char *dir = _DtCMS_DEFAULT_DIR;
++	char *over = getenv("CDE_CMSD_DIR");
+ 	char	buff [MAXPATHLEN];
+ 	int	error;
+ 	int	fd;
++
++	if (over && *over)
++		dir = over;
+ #ifdef SVR4
+ 	struct flock locker;
+ 	locker.l_type = F_WRLCK;
+--- a/programs/dtcm/server/log.c
++++ b/programs/dtcm/server/log.c
+@@ -52,7 +52,21 @@
+ extern gid_t	daemon_gid;
+ extern char	*pgname;
+ extern int	debug;
+-static char	*spool_dir = _DtCMS_DEFAULT_DIR;
++/* cde-wayland: allow rpc.cmsd to run as an ordinary user with a private spool
++ * directory (CDE_CMSD_DIR), instead of the root-owned /var/spool/calendar. */
++static char	*spool_dir = NULL;
++
++static char *
++cmsd_spool_dir(void)
++{
++	char *d;
++
++	if (spool_dir == NULL) {
++		d = getenv("CDE_CMSD_DIR");
++		spool_dir = (d && *d) ? d : _DtCMS_DEFAULT_DIR;
++	}
++	return spool_dir;
++}
+ 
+ char *tag_string[] = {
+ 	"0:boolean",
+@@ -99,25 +113,25 @@
+ extern char *
+ _DtCmsGetLogFN(char *who)
+ {
+-	return (get_fname (spool_dir, _DtCMS_DEFAULT_LOG, who));
++	return (get_fname (cmsd_spool_dir (), _DtCMS_DEFAULT_LOG, who));
+ }
+  
+ extern char *
+ _DtCmsGetBakFN(char *who)
+ {
+-	return (get_fname (spool_dir, _DtCMS_DEFAULT_BAK, who));
++	return (get_fname (cmsd_spool_dir (), _DtCMS_DEFAULT_BAK, who));
+ }
+  
+ extern char *
+ _DtCmsGetTmpFN(char *who)
+ {
+-	return (get_fname (spool_dir, _DtCMS_DEFAULT_TMP, who));
++	return (get_fname (cmsd_spool_dir (), _DtCMS_DEFAULT_TMP, who));
+ }
+ 
+ extern char *
+ _DtCmsGetDelFN(char *who)
+ {
+-	return (get_fname (spool_dir, _DtCMS_DEFAULT_DEL, who));
++	return (get_fname (cmsd_spool_dir (), _DtCMS_DEFAULT_DEL, who));
+ }
+ 
+ extern CSA_return_code
+@@ -732,7 +746,13 @@
+ 	int	error;
+ 	char	buff[BUFSIZ];
+ 
+-	if (changeeuid == B_TRUE) {
++	/* cde-wayland: the default mode is rw for the file's group (the daemon
++	 * group), which the ordinary user running us is not in.  As the owner we
++	 * need write access ourselves. */
++	if (geteuid() != 0)
++		mode |= S_IWUSR;
++
++	if (changeeuid == B_TRUE && geteuid() == 0) {
+ #ifndef AIX
+ #ifdef HPUX
+ 		setuid (0);
+@@ -756,21 +776,26 @@
+ 	}
+ 
+ 	if (chown (file, uid, gid) < 0) {
+-		if (printerr == B_TRUE) {
+-			error = errno;
+-			sprintf (buff, "%s: chown %s to (uid=%ld,gid=%ld) failed.\n%s%s",
+-				pgname, file, (long)uid, (long)gid, pgname, ": System error");
+-			errno = error;
+-			perror (buff);
++		/* cde-wayland: as an ordinary user we cannot chown the calendar
++		 * log to the daemon uid/gid; the file is already ours, so ignore
++		 * it.  Only a root-run daemon treats this as fatal. */
++		if (geteuid() == 0) {
++			if (printerr == B_TRUE) {
++				error = errno;
++				sprintf (buff, "%s: chown %s to (uid=%ld,gid=%ld) failed.\n%s%s",
++					pgname, file, (long)uid, (long)gid, pgname, ": System error");
++				errno = error;
++				perror (buff);
++			}
++			return(-1);
+ 		}
+-		return(-1);
+ 	}
+ 
+ #ifndef AIX
+ #ifdef HPUX
+-	if (changeeuid == B_TRUE && setuid (daemon_uid) < 0)
++	if (changeeuid == B_TRUE && geteuid() == 0 && setuid (daemon_uid) < 0)
+ #else
+-	if (changeeuid == B_TRUE && seteuid (daemon_uid) < 0)
++	if (changeeuid == B_TRUE && geteuid() == 0 && seteuid (daemon_uid) < 0)
+ #endif
+ 	{
+ 		if (printerr == B_TRUE) {

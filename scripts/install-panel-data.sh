@@ -36,6 +36,16 @@ fi
 [ -x "$DTWM_DIR/dtfplist" ] && install -D -m 0755 "$DTWM_DIR/dtfplist" \
     "$CDE_PREFIX/bin/dtfplist"
 
+# Calendar Manager service for dtcm.  The build overlay (patches/) lets it run
+# as the user with a private spool directory.
+if [ -x "$CDE_BUILD/programs/dtcm/server/rpc.cmsd" ]; then
+    install -D -m 0755 "$CDE_BUILD/programs/dtcm/server/rpc.cmsd" \
+        "$CDE_ROOT/bin/rpc.cmsd"
+    ok "installed rpc.cmsd (Calendar Manager service)"
+else
+    warn "rpc.cmsd not built; dtcm will report the calendar service missing"
+fi
+
 if [ -x "$CDE_BUILD/lib/tt/bin/ttsession/ttsession" ]; then
     install -D -m 0755 "$CDE_BUILD/lib/tt/bin/ttsession/ttsession" \
         "$CDE_PREFIX/bin/ttsession"
