@@ -43,6 +43,11 @@ switch live, serving the `DtWsm` protocol to applications, and adding CDE's
 workspace/desktop/titlebar menus. Plan and protocol notes:
 [docs/WORKSPACE-MANAGER.md](docs/WORKSPACE-MANAGER.md).
 
+The Style Manager (`dtstyle`) is wired to the session as well: its Backdrop
+module sets the CoW desktop background per workspace, and its Keyboard module's
+Auto Repeat toggle is shared with every client (the shim gates the key repeat it
+synthesises on it).
+
 | M | Scope | State |
 |---|---|---|
 | M0 | repo + fetch + shim + CoW/River build | ✅ shim + Xt/Motif + CoW build (River: install distro package) |
