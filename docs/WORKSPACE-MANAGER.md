@@ -166,11 +166,14 @@ matching `sys.dtwmrc`'s `builtinSystemMenu`, instead of CoW's decoration menu.
   registers; verified), and `ChangeToWorkspace()` runs `cde-wsm-desk <n>`, which
   records the current workspace for the shim. A `DtWsmSetCurrentWorkspace` is
   delivered, resolved (`ws2` -> the workspace) and handled.
-* **Remaining for step 1.** Pick the CoW command that moves the *visible* desk
-  reliably (`moocow desk` accepts the command but the nested session's view does
-  not always follow; `-d` vs `-c`/collect semantics need pinning down), and make
-  the Front Panel's own switch highlight update (it follows the WSM's
-  `DtWorkspace_Modified` notice).
+* **CoW desk switch + backdrop (done).** `cde-wsm-desk` runs `moocow desk -d N`,
+  which moves the visible desk (windows on the old desk are hidden). dtwm maps a
+  per-workspace **backdrop** as a full-screen override-redirect window on each
+  switch; the shim now keeps a screen-covering override-redirect window out of
+  the Wayland tree instead of promoting it as a popup (it was painting the whole
+  output white). The Front Panel's switch highlight follows the change too.
+* **Step 1 done.** Switching workspaces from the Front Panel moves CoW's desk,
+  the panel reflects it, and every client's `DtWsmGetCurrentWorkspace` agrees.
 
 ## Open questions / risks
 
