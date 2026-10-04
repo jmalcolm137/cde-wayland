@@ -273,6 +273,18 @@ dtwm-style icon box would need CoW to expose icons as a managed container.
   focus fallback; its stack pass sorts by container depth, not transients), and
   honour the MINIMIZE/MAXIMIZE/CLOSE function bits (needs CoW to hide titlebar
   buttons per window).
+* **Full CDE root menu (done).** The desktop right-click menu is now CDE's
+  `DtRootMenu` (labels and order from dtwm's `sys.dtwmrc`): **Workspace Menu**
+  title, **Shuffle Up/Down** (`f.circle_up/down` -> `focus -nw/-pw`), **Refresh**
+  (no-op; CoW has no repaint command), **Minimize/Restore Front Panel**
+  (`f.toggle_frontpanel` -> `cde-toggle-frontpanel`), separator, **Restart
+  Workspace Manager...** (`f.restart` -> `cde-restart-dtwm`), separator, **Log
+  out...** (`ExitSession` -> `cde-logout`). The cde-wayland additions
+  (Previous/Next Workspace, Terminal, Files, Lock Screen) follow. CoW cannot
+  select the panel with `-t %FrontPanel` (sticky + circulate-skip), so the
+  toggle helper looks the window id up and iconifies by id. Verified: the toggle
+  minimises/restores the panel, Restart replaces dtwm (one process, new pid),
+  and Log out stops dtwm/rpc.cmsd/CoW/River/ttsession.
 * **Screen lock (done).** CDE's `LockDisplay` action is a ToolTalk request to
   dtsession, which we do not run, so `install-panel-data.sh` rewrites it in the
   installed databases to start **waylock** (River provides

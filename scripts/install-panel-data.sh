@@ -60,6 +60,14 @@ if [ -f "$PROJECT_ROOT/tools/cde-wsm.c" ]; then
     fi
 fi
 
+# Root-menu helpers: "Restart Workspace Manager..." and "Log out...".
+for h in cde-restart-dtwm.sh cde-logout.sh cde-toggle-frontpanel.sh; do
+    [ -f "$PROJECT_ROOT/scripts/$h" ] || continue
+    install -D -m 0755 "$PROJECT_ROOT/scripts/$h" \
+        "$CDE_ROOT/bin/$(basename "$h" .sh)"
+done
+ok "installed root-menu helpers (restart / logout)"
+
 # Calendar Manager service for dtcm.  The build overlay (patches/) lets it run
 # as the user with a private spool directory.
 if [ -x "$CDE_BUILD/programs/dtcm/server/rpc.cmsd" ]; then
