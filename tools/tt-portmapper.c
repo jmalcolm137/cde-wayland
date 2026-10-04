@@ -173,13 +173,15 @@ static void unstore_rpcb(const struct rpcb *m)
     }
 }
 
-static const char *find_rpcb(unsigned long prog, unsigned long vers,
-                             const char *netid)
+static const char *find_rpcb_vers(unsigned long prog, unsigned long vers,
+                                  int exact_vers, const char *netid)
 {
     const char *any = NULL;
     int want_any = (netid == NULL || *netid == '\0');
     for (int i = 0; i < nrb; i++) {
-        if (rbmap[i].prog != prog || rbmap[i].vers != vers)
+        if (rbmap[i].prog != prog)
+            continue;
+        if (exact_vers && rbmap[i].vers != vers)
             continue;
         if (!want_any) {
             if (strcmp(rbmap[i].netid, netid) == 0)
@@ -232,7 +234,10 @@ static void rpcb_dispatch(struct svc_req *rqstp, SVCXPRT *transp)
             svcerr_decode(transp);
             return;
         }
-        const char *a = find_rpcb(m.r_prog, m.r_vers, m.r_netid);
+        /* GETADDR matches any version of the program; GETVERSADDR requires
+         * the exact one. */
+        int exact = (rqstp->rq_proc == RPCBPROC_GETVERSADDR);
+        const char *a = find_rpcb_vers(m.r_prog, m.r_vers, exact, m.r_netid);
         char *res = NULL;
         if (a) {
             /* ttsession binds INADDR_ANY, so it registers "0.0.0.0.<port>".

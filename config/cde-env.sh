@@ -32,6 +32,9 @@ fi
 # system rpcbind or our unprivileged tools/tt-portmapper.  Best-effort: if no
 # portmapper is reachable ttsession just fails and apps still run.
 if [ -z "${TT_SESSION:-}" ] && command -v ttsession >/dev/null 2>&1; then
+    # Loopback/TCP sessions cannot use Unix-credential or DES auth; use none.
+    : "${TOOLTALK_AUTH_LEVEL:=none}"
+    export TOOLTALK_AUTH_LEVEL
     _tt="$(ttsession -p 2>/dev/null | head -1 || true)"
     if [ -n "$_tt" ]; then
         export TT_SESSION="$_tt"
