@@ -73,15 +73,17 @@ X-property channel above.
 
 ## Findings so far
 
-* `dtfile` builds its desktop/workspace list in `LoadDesktopInfo()`
+* `dtfile` builds its desktop/workspace list in `BuildDesktopLinks()`
   (`programs/dtfile/Desktop.c`), calling `DtWsmGetWorkspaceList()` in a retry
   loop that `sleep(2)`s up to `retryLoadDesktopInfo` times, then falls back to a
-  single workspace named "One". With no WM window the query always fails, so the
-  File Manager stalls and never presents a real view.
-* `dtfile` (and others) block in `_DtWsmAddMarqueeSelectionCallback`
-  (`lib/DtSvc/DtUtil1/WmMarquee.c`) when the WSM is absent — it registers a
-  `TT_OBSERVE` pattern for `DtMarquee_Selection`. Re-enabling dtwm's ToolTalk
-  did **not** by itself unblock it; needs more digging (see open questions).
+  single workspace named "One". **Resolved.** The real cause was not a missing
+  WSM but `CDE_NO_WM_INFO`: dtwm needs it (so the shim does not publish a
+  synthetic `_MOTIF_WM_INFO` and dtwm claims the screen), but dtwm passes its
+  environment to the applications it launches, so they inherited the opt-out and
+  got no workspace properties — the query failed and dtfile looped on `sleep(2)`
+  before ever mapping a window. The shim now *consumes* the variable in the
+  process that set it (unset once honoured), so only dtwm opts out; the File
+  Manager opens normally.
 * The shim's `XPutImage`/background-pixmap/cursor/output-size fixes are
   independent of this work.
 
