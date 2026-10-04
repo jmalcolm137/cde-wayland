@@ -16,9 +16,11 @@ export CDE_PREFIX CDE_ROOT
 export DT_HOME="$CDE_ROOT"
 export PATH="$CDE_ROOT/bin:$CDE_PREFIX/bin:$PATH"
 
-# CDE help data, the action/datatype databases (the Front Panel's PUSH_ACTION
-# names resolve against these), and the application defaults that hold Dtwm.
-export DTDATABASESEARCHPATH="$CDE_ROOT/appconfig/types/%L:$CDE_ROOT/appconfig/types"
+# CDE help data and the application defaults that hold Dtwm.  The action and
+# datatype database path is *not* set here: the library builds it from the
+# compiled-in CDE_INSTALLATION_TOP (our $CDE_ROOT), and its separator is a
+# comma, not a colon.  Overriding it (especially colon-separated) collapses the
+# whole list into one bogus directory and the Front Panel finds no database.
 export DTHELPSEARCHPATH="$CDE_ROOT/help/%L/%T/%N%S:$CDE_ROOT/help/%T/%N%S"
 export DTUSERSEARCHPATH="$HOME/.dt/%T/%N%S"
 export XAPPLRESDIR="$CDE_PREFIX/share/X11/app-defaults"
