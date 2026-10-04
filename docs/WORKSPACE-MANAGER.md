@@ -151,6 +151,27 @@ matching `sys.dtwmrc`'s `builtinSystemMenu`, instead of CoW's decoration menu.
   so the remaining work is the WM core (framing, focus, workspaces, output
   handling) — not the CDE UI.
 
+## Progress log
+
+* **Shim — synthetic WM window (done).** A WM window is a direct child of the
+  root with `_MOTIF_WM_INFO` on the root and `_DT_WORKSPACE_LIST` /
+  `_DT_WORKSPACE_CURRENT` on it, so `DtWsmGetWorkspaceList` /
+  `DtWsmGetCurrentWorkspace` succeed. dtwm opts out with `CDE_NO_WM_INFO` (it
+  checks `_MOTIF_WM_INFO` to decide whether a WM is already running).
+* **Shim — shared atoms (done).** Custom atoms are stored in a name<->id table
+  under `$XDG_RUNTIME_DIR` and loaded/extended by every client, so an atom id
+  passed between processes keeps its meaning. Without this dtwm read the
+  client's `ws2` as a different atom and never resolved the workspace.
+* **dtwm WSM + bridge (done).** `dtwm` runs with ToolTalk (its WSM pattern
+  registers; verified), and `ChangeToWorkspace()` runs `cde-wsm-desk <n>`, which
+  records the current workspace for the shim. A `DtWsmSetCurrentWorkspace` is
+  delivered, resolved (`ws2` -> the workspace) and handled.
+* **Remaining for step 1.** Pick the CoW command that moves the *visible* desk
+  reliably (`moocow desk` accepts the command but the nested session's view does
+  not always follow; `-d` vs `-c`/collect semantics need pinning down), and make
+  the Front Panel's own switch highlight update (it follows the WSM's
+  `DtWorkspace_Modified` notice).
+
 ## Open questions / risks
 
 * What exactly blocks `_DtWsmAddMarqueeSelectionCallback` (Tttk type, the
