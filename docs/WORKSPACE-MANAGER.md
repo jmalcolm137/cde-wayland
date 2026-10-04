@@ -180,6 +180,12 @@ decorated window.
   output white). The Front Panel's switch highlight follows the change too.
 * **Step 1 done.** Switching workspaces from the Front Panel moves CoW's desk,
   the panel reflects it, and every client's `DtWsmGetCurrentWorkspace` agrees.
+* **Live workspace state (shim, done).** The workspace list/current live in the
+  WSM bridge's state file, so the shim now re-reads it on every
+  `XGetWindowProperty` for `_DT_WORKSPACE_LIST` / `_DT_WORKSPACE_CURRENT` on its
+  synthetic WM window. Before this a client snapshotted the state at connect
+  time, so a long-running app kept the old current workspace; now one process
+  observed ws0 → ws1 across a switch.
 * **Step 3b — CDE window menu (done).** The `CDEWindow` menu mirrors dtwm's
   `builtinSystemMenu` (Restore/Move/Size/Minimize/Maximize/Lower/Occupy
   Workspace…/Occupy All Workspaces/Close) and is posted by the left titlebar
