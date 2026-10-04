@@ -37,5 +37,12 @@
 *XmPushButton.foreground:	#000000
 *XmToggleButton.selectColor:	#0f3977
 
+! The Style Manager - Font dialog matches the current *systemFont against its
+! Dtstyle*SystemFont1..7 list (14-pt Helvetica by default).  Set the system
+! font to that same entry so the dialog selects the current size instead of
+! reporting that the font in use cannot be found (which also leaves the
+! preview empty).
+*systemFont: -adobe-helvetica-medium-r-normal--14-*-iso8859-1
+
 ! CDE window decorations that the shim maps to CoW/River window hints.
 *XmDialogShell.title:		CDE
