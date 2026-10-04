@@ -76,6 +76,13 @@ cp "$PROJECT_ROOT/config/cde-session.sh"  "$CDE_PREFIX/share/cde-wayland/cde-ses
 cp "$PROJECT_ROOT/config/Xresources"      "$CDE_PREFIX/share/cde-wayland/Xresources"
 chmod +x "$CDE_PREFIX/share/cde-wayland/cde-session.sh"
 
+# The shim (xlib-wayland) reads this session resource file independently of
+# XENVIRONMENT, so clients started without the CDE environment still get CDE's
+# fontsets (DtTerm's *userFont) and app-defaults.  Without it, DtTerm falls back
+# to a single core font and draws only a quarter of each multibyte string.
+install -D -m 0644 "$PROJECT_ROOT/config/Xresources" \
+    "$conf_home/xlib-wayland/Xresources"
+
 export XDG_CONFIG_HOME="$conf_home"
 if [ "$NESTED" = 1 ]; then
     log "nested mode: River on the wlroots Wayland backend"
@@ -85,9 +92,21 @@ fi
 # Our clients never connect to Xwayland: the shim ignores DISPLAY and speaks
 # Wayland directly.  River may still start Xwayland for other tools, so we only
 # disable it in the unprivileged namespace, where it cannot create its socket.
-log "starting River (init: $conf_home/river/init)"
+#
+# Start the whole session inside a ToolTalk process-tree session.  ToolTalk
+# advertises its session address through an X property, which cannot work here
+# (the shim gives every client its own private X server); `ttsession -c`
+# instead exports TT_SESSION (and the start token) to the process tree, so
+# every CDE client joins the session directly.  This is what makes the
+# ToolTalk-based apps (File Manager, Mailer, ...) work.
+command -v ttsession >/dev/null 2>&1 || \
+    die "ttsession not found; run scripts/install-panel-data.sh"
+
+TT_ARGS=( -a unix -c river )
 if [ "${CDE_SESSION_NS:-0}" = 1 ]; then
-    river -no-xwayland -c "$conf_home/river/init"
-else
-    river -c "$conf_home/river/init"
+    TT_ARGS+=( -no-xwayland )
 fi
+TT_ARGS+=( -c "$conf_home/river/init" )
+
+log "starting River under a ToolTalk session (init: $conf_home/river/init)"
+exec ttsession "${TT_ARGS[@]}"

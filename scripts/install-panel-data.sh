@@ -120,6 +120,18 @@ else
     warn "no .dt databases in $TYPES_DIR; panel actions may not resolve"
 fi
 
+# 2d. ToolTalk static process types.  ttsession loads these (".xdr" database)
+#     from /etc/tt/types.xdr or $HOME/.tt/types.xdr; without them every CDE
+#     ptype (DtFile, DtMail, ...) is unknown and clients fail with
+#     TT_ERR_PTYPE ("not the name of a process type").
+if [ -s "$CDE_BUILD/programs/tttypes/types.xdr" ]; then
+    install -D -m 0644 "$CDE_BUILD/programs/tttypes/types.xdr" \
+        "$HOME/.tt/types.xdr"
+    ok "installed ToolTalk process types (~/.tt/types.xdr)"
+else
+    warn "types.xdr not built; ToolTalk apps may report unknown process types"
+fi
+
 # 3. Icons.  The default XMICONSEARCHPATH built by _DtEnvControl() expands to
 #    $CDE_ROOT/appconfig/icons/%L/%B%M.pm, where %B is the base name and %M the
 #    size modifier (l/m/s/t).

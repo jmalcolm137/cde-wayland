@@ -23,15 +23,16 @@ fi
 log() { printf 'cde-session: %s\n' "$*" >&2; }
 
 if [ -z "${TT_SESSION:-}" ]; then
-    log "warning: no ToolTalk session. Start rpcbind (sudo systemctl start"
-    log "         rpcbind) so ttsession can run; dtwm will otherwise show a"
-    log "         ToolTalk error dialog."
+    log "warning: no ToolTalk session; CDE apps may show ToolTalk errors."
+    log "         run-session.sh starts one with 'ttsession -c'."
 fi
 
-# The CDE Front Panel (real dtwm, contained).
+# The CDE Front Panel (real dtwm, contained).  dtwm skips its own ToolTalk
+# messaging: registering as the workspace/window manager is wrong here (CoW is
+# the WM) and it stopped the Front Panel from being created.
 if command -v dtwm >/dev/null 2>&1; then
     log "starting the CDE Front Panel (dtwm, contained)"
-    dtwm -xrm '*useFrontPanel: True' &
+    CDE_NO_TOOLTALK=1 dtwm -xrm '*useFrontPanel: True' &
 else
     log "error: dtwm not found; run scripts/install-panel-data.sh"
 fi

@@ -31,12 +31,9 @@ if [ -z "${XENVIRONMENT:-}" ] && [ -f "$CDE_PREFIX/share/cde-wayland/Xresources"
     export XENVIRONMENT="$CDE_PREFIX/share/cde-wayland/Xresources"
 fi
 
-# ToolTalk-free launching.  CDE's Front Panel normally runs actions through
-# ToolTalk, but ToolTalk both needs a portmapper and (when it initialises)
-# stops dtwm from creating the Front Panel.  We ship a small build overlay
-# (patches/) that (a) skips dtwm's ToolTalk init so the panel is created and
-# (b) makes DtActionInvoke execute the action's command locally.  Setting
-# CDE_NO_TOOLTALK selects (a); no ttsession is started, so the action library
-# takes (b).
-export CDE_NO_TOOLTALK=1
-unset TT_SESSION
+# ToolTalk.  run-session.sh starts the whole session under `ttsession -c`, so
+# TT_SESSION is exported to every client and CDE apps get the ToolTalk services
+# they expect (the File Manager, Mailer, etc. are ToolTalk programs).  dtwm is
+# the one exception: cde-session.sh starts it with CDE_NO_TOOLTALK so it skips
+# its own messaging/workspace-manager registration and simply creates the Front
+# Panel.  Do not clobber TT_SESSION here.

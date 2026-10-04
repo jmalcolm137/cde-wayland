@@ -11,7 +11,37 @@
  #include <limits.h>
  
  #include <X11/Intrinsic.h>
-@@ -1139,6 +1143,159 @@
+@@ -76,6 +80,10 @@
+ #include <Dt/Service.h>
+ #include <Dt/UserMsg.h>
+ 
++/* cde-wayland: defined near NoToolTalkConnectionError below.  Lets
++ * DtActionInvoke() bypass ToolTalk entirely when CDE_NO_TOOLTALK is set. */
++static int _DtLocalActionRun(const char *name);
++
+ #include <Xm/Xm.h>
+ #include <Xm/BulletinB.h>
+ #include <Xm/DialogS.h>
+@@ -519,6 +527,18 @@
+       w = XtParent(w);
+     
+     _DtSvcProcessLock();
++
++    /* cde-wayland: prefer running a Front-Panel action locally.  The panel's
++     * buttons have no arguments, so resolve the action against the .dt
++     * databases / built-in table and run its command directly.  This is what
++     * lets the panel (and an app's "Open Terminal" menu) work; actions with no
++     * local command fall through to the normal ToolTalk path below. */
++    if ((aap == NULL || aac == 0) && _DtLocalActionRun(action))
++    {
++        _DtSvcProcessUnlock();
++        return 0;
++    }
++
+     if ( !initialized )
+     {
+       mode_t mode;
+@@ -1139,6 +1159,177 @@
   * one, then we will fail and post an error dialog.
   */
  
@@ -44,6 +74,11 @@
 +    buf[o] = '\0';
 +    if (fork() == 0) {
 +        setsid();
++        /* The action itself was launched locally, but the program it runs is a
++         * normal CDE client: let it use ToolTalk (the session exports
++         * TT_SESSION) so programs like the File Manager/Mailer behave.  Only
++         * the Front Panel (dtwm) runs ToolTalk-free. */
++        unsetenv("CDE_NO_TOOLTALK");
 +        execl("/bin/sh", "sh", "-c", buf, (char *)NULL);
 +        _exit(127);
 +    }
@@ -63,8 +98,10 @@
 +                 "%s/appconfig/types:%s/appconfig/types/C", root, root);
 +    }
 +    char *save = NULL;
-+    for (char *dir = strtok_r(paths, ":", &save); dir;
-+         dir = strtok_r(NULL, ":", &save)) {
++    /* CDE separates database directories with a comma; accept a colon too
++     * so the same code works with a hand-set DTDATABASESEARCHPATH. */
++    for (char *dir = strtok_r(paths, ",:", &save); dir;
++         dir = strtok_r(NULL, ",:", &save)) {
 +        char d[4096];
 +        char *pct = strstr(dir, "%L");
 +        if (pct)
@@ -137,13 +174,24 @@
 +_DtLocalActionRun(const char *name)
 +{
 +    char cmd[2048];
++    /* Run through /bin/sh, so $CDE_ROOT/$HOME expand.  The File Manager opens
++     * the current directory, so cd first for the "home" and "trash" buttons. */
 +    static const struct { const char *action; const char *cmd; } builtin[] = {
-+        { "DtfileHome",     "$CDE_ROOT/bin/dtfile -" },
-+        { "Dtfile",         "$CDE_ROOT/bin/dtfile" },
-+        { "TextEditor",     "$CDE_ROOT/bin/dtpad" },
-+        { "Dtmail",         "$CDE_ROOT/bin/dtmail" },
-+        { "OpenDtIntro",    "$CDE_ROOT/bin/dthello" },
-+        { "DtPrintManager", "$CDE_ROOT/bin/dtprintinfo" },
++        { "DtfileHome",     "cd \"$HOME\" && exec \"$CDE_ROOT\"/bin/dtfile" },
++        { "Dtfile",         "exec \"$CDE_ROOT\"/bin/dtfile" },
++        { "TextEditor",     "exec \"$CDE_ROOT\"/bin/dtpad" },
++        { "Dtpad",          "exec \"$CDE_ROOT\"/bin/dtpad" },
++        { "Dtmail",         "exec \"$CDE_ROOT\"/bin/dtmail" },
++        { "OpenDtIntro",    "exec \"$CDE_ROOT\"/bin/dthello" },
++        { "Dtstyle",        "exec \"$CDE_ROOT\"/bin/dtstyle" },
++        { "Dtcm",           "exec \"$CDE_ROOT\"/bin/dtcm" },
++        { "Dtterm",         "exec \"$CDE_ROOT\"/bin/dtterm" },
++        { "Terminal",       "exec \"$CDE_ROOT\"/bin/dtterm" },
++        { "Dttrash",        "mkdir -p \"$HOME/.dt/Trash\"; cd \"$HOME/.dt/Trash\" && exec \"$CDE_ROOT\"/bin/dtfile" },
++        { "Trash",          "mkdir -p \"$HOME/.dt/Trash\"; cd \"$HOME/.dt/Trash\" && exec \"$CDE_ROOT\"/bin/dtfile" },
++        { "Dtappmgr",       "mkdir -p \"$HOME/.dt/appmanager\"; cd \"$HOME/.dt/appmanager\" && exec \"$CDE_ROOT\"/bin/dtfile" },
++        { "DtLoadInfoLib",  "exec \"$CDE_ROOT\"/bin/dtinfo_start" },
++        { "DtPrintManager", "exec \"$CDE_ROOT\"/bin/dtprintinfo -all" },
 +        { NULL, NULL }
 +    };
 +    int i;
@@ -171,7 +219,7 @@
  static void 
  NoToolTalkConnectionError(
          Widget w,
-@@ -1146,6 +1303,8 @@
+@@ -1146,6 +1337,8 @@
  	Tt_status status)
  
  {
