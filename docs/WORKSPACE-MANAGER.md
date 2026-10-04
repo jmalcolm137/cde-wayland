@@ -263,14 +263,16 @@ dtwm-style icon box would need CoW to expose icons as a managed container.
   compositor a dialog's parent (`WM_TRANSIENT_FOR` -> `xdg_toplevel.set_parent`;
   CoW logs the window as "parented") and forwards the ICCCM size constraints
   (`WM_NORMAL_HINTS` `PMinSize`/`PMaxSize` -> `xdg_toplevel.set_min_size`/
-  `set_max_size`), so a fixed-size CDE dialog is actually fixed-size. `cow.conf`
+  `set_max_size`), so a fixed-size CDE dialog is actually fixed-size, and
+  `_MOTIF_WM_HINTS` **functions** that drop RESIZE pin min == max. `cow.conf`
   switches focus to **click-to-focus** (CoW defaults to sloppy; MWM is click)
   and adds the CDE/MWM key bindings (Alt+Space window menu, Alt+Tab/Alt+F6
   next/prev, Alt+F3 lower, Alt+F4 close, Alt+F5 restore, Alt+F7 move, Alt+F8
   size, Alt+F9 minimize, Alt+F10 maximize). Still open: keep a dialog stacked
-  directly above its parent (CoW stores the parent but only uses it for focus
-  fallback), and honour `_MOTIF_WM_HINTS` `functions` (disable resize/minimize/
-  maximize per window).
+  directly above its parent (CoW stores `view->parent` but only uses it for
+  focus fallback; its stack pass sorts by container depth, not transients), and
+  honour the MINIMIZE/MAXIMIZE/CLOSE function bits (needs CoW to hide titlebar
+  buttons per window).
 * **Screen lock (done).** CDE's `LockDisplay` action is a ToolTalk request to
   dtsession, which we do not run, so `install-panel-data.sh` rewrites it in the
   installed databases to start **waylock** (River provides
