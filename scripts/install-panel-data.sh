@@ -153,6 +153,32 @@ if ls "$TYPES_DIR"/*.dt >/dev/null 2>&1; then
         # are "not found".
         cp "$CDE_ROOT/appconfig/types/C/$b" "$CDE_ROOT/appconfig/types/$b"
     done
+    # LockDisplay is a ToolTalk request to dtsession (Display_Lock), which we do
+    # not run.  Rewrite the action in the installed databases to start the
+    # Wayland screen locker instead (River provides ext_session_lock_manager_v1,
+    # which waylock uses).  A user-database override alone did not win for this
+    # action.
+    python3 - "$CDE_ROOT" <<'PY'
+import os, re, sys
+root = sys.argv[1]
+new = ("ACTION LockDisplay\n{\n    LABEL Lock\n    TYPE COMMAND\n"
+       "    WINDOW_TYPE NO_STDIO\n    EXEC_STRING /bin/sh -c 'exec waylock'\n}\n")
+pat = re.compile(r'ACTION\s+LockDisplay\s*\{[^{}]*\}')
+count = 0
+for dirpath, _, files in os.walk(os.path.join(root, 'appconfig', 'types')):
+    for fn in files:
+        if not fn.endswith('.dt'):
+            continue
+        p = os.path.join(dirpath, fn)
+        s = open(p).read()
+        if 'LockDisplay' not in s:
+            continue
+        s2 = pat.sub(new, s)
+        if s2 != s:
+            open(p, 'w').write(s2)
+            count += 1
+print("      rewrote LockDisplay in %d database file(s)" % count)
+PY
     ok "installed $(ls "$TYPES_DIR"/*.dt | wc -l) action/datatype databases"
 else
     warn "no .dt databases in $TYPES_DIR; panel actions may not resolve"
@@ -236,8 +262,13 @@ if [ -x "$CDE_BUILD/programs/dtinfo/dtinfo/src/dtinfo" ]; then
     else
         warn "cde.dti not built; run scripts/build-infolib.sh for the InfoManager"
     fi
-    install -D -m 0644 "$PROJECT_ROOT/config/dtwm-types/zz-info.dt" \
-        "$HOME/.dt/types/zz-info.dt"
+    # Overlay action definitions (run programs we have locally instead of the
+    # dtsession/ToolTalk services we do not run).
+    for dt in "$PROJECT_ROOT"/config/dtwm-types/*.dt; do
+        [ -f "$dt" ] || continue
+        install -D -m 0644 "$dt" "$HOME/.dt/types/$(basename "$dt")"
+    done
+    ok "installed action overlays into ~/.dt/types"
     # dtinfo declares the DtInfo process type; the base types.xdr has no DtInfo
     # entry, and its start path is the classic /usr/dt.  Merge a copy with the
     # path rewritten to this prefix into the user database.

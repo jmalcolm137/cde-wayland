@@ -1,0 +1,15 @@
+# cde-wayland: the Front Panel's Lock control.
+#
+# CDE's LockDisplay action is a ToolTalk request to dtsession (Display_Lock).
+# We do not run dtsession, so start the Wayland screen locker instead; River
+# implements ext_session_lock_manager_v1, which waylock uses.  Installed into
+# $HOME/.dt/types by scripts/install-panel-data.sh.
+
+ACTION LockDisplay
+{
+    LABEL Lock
+    ICON Fplock
+    TYPE COMMAND
+    WINDOW_TYPE NO_STDIO
+    EXEC_STRING /bin/sh -c 'exec waylock'
+}

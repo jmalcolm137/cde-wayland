@@ -259,6 +259,13 @@ dtwm-style icon box would need CoW to expose icons as a managed container.
   `river_window_v1` when a toplevel's surface is unmapped, so re-mapping the
   same `wl_surface` never announced a window again; the shim now rebuilds any
   unmapped toplevel on the next map, as it already did for popups.
+* **Screen lock (done).** CDE's `LockDisplay` action is a ToolTalk request to
+  dtsession, which we do not run, so `install-panel-data.sh` rewrites it in the
+  installed databases to start **waylock** (River provides
+  `ext_session_lock_manager_v1`), and the desktop Workspace Menu gains a
+  **Lock Screen** item. The Front Panel's own Lock control does not fire under
+  CoW's switch box, so the menu item is the working entry point; the
+  `LockDisplay` action is wired regardless.
 * **Information Manager (done).** The panel's InfoManager button opens dtinfo,
   which shows the CDE "Book List". Three pieces were needed: (1) build the CDE
   documentation as an MMDB **infolib** — `scripts/build-infolib.sh` runs the
