@@ -31,10 +31,12 @@ from this tree.
 
 ## Status
 
-**M2 reached.** Stock CDE `dtcalc` and `dtterm` build unmodified against the
-Wayland libX11 shim and render under the headless compositor; `dtpad`, `dtfile`
-and `dtstyle` also build. The shim and CoW build and install from the harness.
-See [DESIGN.md §9](DESIGN.md#9-milestones).
+**A CDE desktop on Wayland.** River (compositor) + CoW (window manager) + the
+**real CDE Front Panel** (`dtwm`, contained) + real CDE applications
+(`dtterm`, `dtfile`, `dtpad`, `dtcalc`, `dtstyle`), all as native Wayland
+clients — verified running nested inside a KWin session. CoW manages the CDE
+windows (decorations, stacking) while the Front Panel launches them. See
+[DESIGN.md §5.2 and §9](DESIGN.md#9-milestones).
 
 | M | Scope | State |
 |---|---|---|

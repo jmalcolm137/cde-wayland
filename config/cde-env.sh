@@ -27,15 +27,14 @@ if [ -z "${XENVIRONMENT:-}" ] && [ -f "$CDE_PREFIX/share/cde-wayland/Xresources"
     export XENVIRONMENT="$CDE_PREFIX/share/cde-wayland/Xresources"
 fi
 
-# ToolTalk: the real CDE desktop (and dtwm's panel messaging) uses it, and
-# ToolTalk needs a running portmapper (rpcbind).  Individual apps still run
-# without it.
-if [ -z "${TT_SESSION:-}" ] && command -v rpcinfo >/dev/null 2>&1; then
-    if command -v ttsession >/dev/null 2>&1 && rpcinfo -p >/dev/null 2>&1; then
-        _tt="$(ttsession -p 2>/dev/null | head -1 || true)"
-        if [ -n "$_tt" ]; then
-            export TT_SESSION="$_tt"
-        fi
-        unset _tt
+# ToolTalk: the real CDE desktop (and the Front Panel's application launching)
+# uses it.  ttsession needs a portmapper; run-session.sh provides either the
+# system rpcbind or our unprivileged tools/tt-portmapper.  Best-effort: if no
+# portmapper is reachable ttsession just fails and apps still run.
+if [ -z "${TT_SESSION:-}" ] && command -v ttsession >/dev/null 2>&1; then
+    _tt="$(ttsession -p 2>/dev/null | head -1 || true)"
+    if [ -n "$_tt" ]; then
+        export TT_SESSION="$_tt"
     fi
+    unset _tt
 fi

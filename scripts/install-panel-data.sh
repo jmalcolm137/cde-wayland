@@ -81,6 +81,39 @@ rm -f "$_fp_tmp"
 mkdir -p "$HOME/.dt/types/fp_dynamic"
 ok "installed dtwm.fp (nls labels resolved)"
 
+# 2b. Regenerate any zero-length .dt.  These are produced by cpp from .dt.src;
+#     an earlier build (before the CppCmd fix) left several empty, so actions
+#     such as Terminal/TextEditor were undefined and the panel could not launch
+#     anything.
+_CPP="$(command -v cpp || true)"
+if [ -n "$_CPP" ]; then
+    for src in "$TYPES_DIR"/*.dt.src; do
+        [ -f "$src" ] || continue
+        out="${src%.src}"
+        if [ ! -s "$out" ]; then
+            "$_CPP" -DCDE_INSTALLATION_TOP="$CDE_ROOT" \
+                    -DCDE_CONFIGURATION_TOP="$CDE_ROOT/config" < "$src" \
+              | sed -e '/^#[line]* *[0-9][0-9]*  *.*$/d' \
+                    -e '/^XCOMM$/s//#/' \
+                    -e '/^XCOMM[^a-zA-Z0-9_]/s/^XCOMM/#/' > "$out"
+            ok "regenerated $(basename "$out")"
+        fi
+    done
+fi
+
+# 2c. Action/datatype databases.  The panel controls name actions
+#     (PUSH_ACTION Terminal, DtfileHome, ...); those are defined in .dt files
+#     that _DtDbRead() looks up under $CDE_ROOT/appconfig/types.
+if ls "$TYPES_DIR"/*.dt >/dev/null 2>&1; then
+    mkdir -p "$CDE_ROOT/appconfig/types/C"
+    for f in "$TYPES_DIR"/*.dt; do
+        strip_nls "$f" > "$CDE_ROOT/appconfig/types/C/$(basename "$f")"
+    done
+    ok "installed $(ls "$TYPES_DIR"/*.dt | wc -l) action/datatype databases"
+else
+    warn "no .dt databases in $TYPES_DIR; panel actions may not resolve"
+fi
+
 # 3. Icons.  The default XMICONSEARCHPATH built by _DtEnvControl() expands to
 #    $CDE_ROOT/appconfig/icons/%L/%B%M.pm, where %B is the base name and %M the
 #    size modifier (l/m/s/t).
