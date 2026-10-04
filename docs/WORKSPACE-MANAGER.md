@@ -135,8 +135,12 @@ Implementation options, in order of preference:
    server), so this needs the shim to hand dtwm the root menu's clicks — only if
    1 and 2 prove too limited.
 
-**3b. CDE titlebar menu.** Minimize / Occupy Workspace / Move / Resize / Close,
-matching `sys.dtwmrc`'s `builtinSystemMenu`, instead of CoW's decoration menu.
+**3b. CDE titlebar menu (done).** CoW's `CDEWindow` menu (`config/cow.conf`)
+mirrors dtwm's `builtinSystemMenu`: Restore / Move / Size / Minimize / Maximize
+/ Lower, a separator, Occupy Workspace… (CoW's dynamic `SendToDesk` submenu) /
+Occupy All Workspaces, a separator, Close. It is posted by the left titlebar
+button (`bind-decoration 1`) and by Alt+Space, and its actions target the
+decorated window.
 
 **3c. Workspace titles** and the **icon box.**
 
@@ -176,6 +180,11 @@ matching `sys.dtwmrc`'s `builtinSystemMenu`, instead of CoW's decoration menu.
   output white). The Front Panel's switch highlight follows the change too.
 * **Step 1 done.** Switching workspaces from the Front Panel moves CoW's desk,
   the panel reflects it, and every client's `DtWsmGetCurrentWorkspace` agrees.
+* **Step 3b — CDE window menu (done).** The `CDEWindow` menu mirrors dtwm's
+  `builtinSystemMenu` (Restore/Move/Size/Minimize/Maximize/Lower/Occupy
+  Workspace…/Occupy All Workspaces/Close) and is posted by the left titlebar
+  button and Alt+Space. Verified: *Close* in the menu closed the dtterm it was
+  opened on.
 * **Step 3a — desktop Workspace Manager menu (core done).** Right-clicking the
   desktop now posts a CDE-style **Workspace Menu** (CoW's `CDEWorkspace` menu in
   `config/cow.conf`, replacing the app menu on Btn3). Its **Previous/Next
