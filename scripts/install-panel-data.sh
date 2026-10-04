@@ -44,6 +44,22 @@ if [ -f "$PROJECT_ROOT/scripts/cde-wsm-desk.sh" ]; then
     ok "installed cde-wsm-desk (Workspace Manager bridge)"
 fi
 
+# Workspace Manager client: runs dtwm's own workspace functions (the root
+# menu's Previous/Next Workspace) by asking the WSM to change, so the Front
+# Panel and every other client stay in step.  Compiled here rather than added
+# to the CDE tree because it is a cde-wayland helper, not part of CDE.
+if [ -f "$PROJECT_ROOT/tools/cde-wsm.c" ]; then
+    if "${CC:-gcc}" -o "$CDE_PREFIX/bin/cde-wsm" "$PROJECT_ROOT/tools/cde-wsm.c" \
+            -I"$CDE_PREFIX/dt/include" -I"$CDE_PREFIX/include" -I/usr/include/tirpc \
+            -L"$CDE_PREFIX/dt/lib" -L"$CDE_PREFIX/lib" \
+            -lDtSvc -ltt -lXm -lXt -lX11 \
+            -Wl,-rpath,"$CDE_PREFIX/lib:$CDE_PREFIX/dt/lib" 2>/dev/null; then
+        ok "installed cde-wsm (Workspace Manager client)"
+    else
+        warn "could not build cde-wsm; CoW's workspace menu will not work"
+    fi
+fi
+
 # Calendar Manager service for dtcm.  The build overlay (patches/) lets it run
 # as the user with a private spool directory.
 if [ -x "$CDE_BUILD/programs/dtcm/server/rpc.cmsd" ]; then

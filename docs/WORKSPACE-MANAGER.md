@@ -110,25 +110,27 @@ X-property channel above.
 ### Step 3 — CDE chrome (user-facing UI)
 
 **3a. Desktop / root Workspace Manager menu (required).**
-Clicking on the desktop (root window) must open the CDE Workspace Manager menu,
-not CoW's `CDEApps` menu. This is dtwm's `builtinRootMenu` from
-`sys.dtwmrc`, which we already install, and in CDE it is the primary place the
-Workspace Manager presents itself to the user:
+Right-clicking the desktop must open the CDE Workspace Manager menu, not CoW's
+`CDEApps` menu. CDE's own root menu (`DtRootMenu`, bound to `<Btn3Down> root`)
+is the primary place the Workspace Manager presents itself:
 
-* a **Workspaces** submenu listing every desk (switch to it), with the current
-  desk marked;
-* **Add Workspace…** / **Delete Workspace…** / **Rename…** (the latter via the
-  switch's inline rename field);
-* **Window Ops**: Shuffle Up/Down, Refresh, Pack Icons, Restart Workspace
-  Manager;
-* the CDE/MWM look (colors, separators, check marks).
+* **Workspace Menu** title;
+* **Previous Workspace** / **Next Workspace** (`f.circle_up` / `f.circle_down`);
+* **Refresh** (`f.refresh`), **Minimize/Restore Front Panel**
+  (`f.toggle_frontpanel`), **Restart Workspace Manager…** (`f.restart`),
+  **Log out…** (`f.action ExitSession`).
 
 Implementation options, in order of preference:
 1. Have CoW's menu system load dtwm's `builtinRootMenu`/`sys.dtwmrc` menu
    definition and dispatch its entries to the WSM (switch/add/delete) and CoW
    (window ops). This keeps one menu engine.
 2. Bridge CoW's root menu to the WSM: build an equivalent CDE-styled menu and
-   route the workspace entries over `DtWsm`.
+   route the workspace entries over `DtWsm`. **In use:** `config/cow.conf`
+   defines the `CDEWorkspace` menu and binds `mouse R:0+right` to it; its
+   Previous/Next entries `exec cde-wsm prev|next`, and `cde-wsm` asks dtwm (the
+   WSM) to change workspaces via `DtWsmSetCurrentWorkspace`, so the Front Panel
+   follows. `Refresh`/`Restart`/`Log out` are dtwm functions with no WSM
+   equivalent yet and are still open.
 3. Run real dtwm's menu on the desktop: dtwm cannot see the root (private X
    server), so this needs the shim to hand dtwm the root menu's clicks — only if
    1 and 2 prove too limited.
@@ -174,6 +176,14 @@ matching `sys.dtwmrc`'s `builtinSystemMenu`, instead of CoW's decoration menu.
   output white). The Front Panel's switch highlight follows the change too.
 * **Step 1 done.** Switching workspaces from the Front Panel moves CoW's desk,
   the panel reflects it, and every client's `DtWsmGetCurrentWorkspace` agrees.
+* **Step 3a — desktop Workspace Manager menu (core done).** Right-clicking the
+  desktop now posts a CDE-style **Workspace Menu** (CoW's `CDEWorkspace` menu in
+  `config/cow.conf`, replacing the app menu on Btn3). Its **Previous/Next
+  Workspace** entries run `cde-wsm` (`tools/cde-wsm.c`), which lists the
+  workspaces via `DtWsmGetWorkspaceList` and changes with
+  `DtWsmSetCurrentWorkspace` — so dtwm performs the switch and the Front Panel
+  highlight follows, rather than CoW moving on its own. Verified: clicking
+  *Next Workspace* moved `current` ws1→ws2 and CoW's desk with it.
 
 ## Open questions / risks
 
