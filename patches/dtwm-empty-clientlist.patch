@@ -1,0 +1,15 @@
+--- a/programs/dtwm/WmWrkspace.c
++++ b/programs/dtwm/WmWrkspace.c
+@@ -439,6 +439,12 @@
+      */
+     pCLE = pSD->clientList;
+ 
++    /* cde-wayland: dtwm runs as a contained panel and manages no client
++     * windows, so its client list can be empty.  Without this the loop below
++     * dereferences a NULL entry and crashes when a workspace is added. */
++    if (pCLE == NULL)
++	return;
++
+     while (1)
+     {
+ 	/*
