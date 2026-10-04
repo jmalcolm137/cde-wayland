@@ -235,6 +235,10 @@ stage_panel() {
             || warn "$sub failed (see the build log above)"
     done
     ok "panel built (dtwm + dtwm.fp + ttsession)"
+    # The Information Manager (dtinfo) browses the CDE documentation as an MMDB
+    # infolib; build it so install-panel-data.sh can install it.  Best-effort:
+    # the panel works without it.
+    "$SCRIPT_DIR/build-infolib.sh" || warn "infolib build failed (InfoManager content)"
     log "installing panel data"
     "$SCRIPT_DIR/install-panel-data.sh" || warn "panel data install failed"
 }

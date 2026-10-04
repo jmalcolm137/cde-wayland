@@ -1,0 +1,17 @@
+# cde-wayland: make the Front Panel's InfoManager button start the Information
+# Manager (dtinfo) directly.
+#
+# CDE's DtLoadInfoLib is a ToolTalk request that ttsession is expected to
+# auto-start through the DtInfo ptype (start "…/infolib/etc/dtinfo_start").
+# That auto-start does not fire in this session, so run the browser directly
+# with the CDE infolib.  Installed into $HOME/.dt/types by
+# scripts/install-panel-data.sh.
+
+ACTION DtLoadInfoLib
+{
+    LABEL Information Manager
+    ICON Dtinfo
+    TYPE COMMAND
+    WINDOW_TYPE NO_STDIO
+    EXEC_STRING /bin/sh -c 'DTINFOLIBSEARCHPATH="${CDE_ROOT}/appconfig/infolib/%L/%I.dti" DTINFOLIBDEFAULT=cde exec dtinfo'
+}

@@ -229,7 +229,7 @@ dtwm-style icon box would need CoW to expose icons as a managed container.
   `dtprintinfo_msg.h` needs the `includes` target first, which build-cde.sh now
   runs before `make`) and opens its Printer Jobs view. Still open: the
   **InfoManager** icon is a `TT_MSG` action (`DtInfo_LoadInfoLib`) that needs
-  the Information Manager `dtinfo`.
+  the Information Manager `dtinfo` (done, see below).
 * **Mailer.** The Mailer starts but reports "Mailer has not been properly
   installed ... the execution group is incorrectly set". dtmail requires a
   setgid `mail` group (it opens the mail spool with group privileges;
@@ -238,6 +238,19 @@ dtwm-style icon box would need CoW to expose icons as a managed container.
   check in `RoamApp.C`; opening the inbox still returns `DTME_BadRunGroup`.
   Needs the setgid group at install time (root) or a non-spool mailbox; a
   separate packaging follow-up, not a WSM issue.
+* **Information Manager (done).** The panel's InfoManager button opens dtinfo,
+  which shows the CDE "Book List". Three pieces were needed: (1) build the CDE
+  documentation as an MMDB **infolib** — `scripts/build-infolib.sh` runs the
+  `doc/C/guides` imake/Makefile through `dtinfogen` to produce `doc/C/cde.dti`,
+  which `install-panel-data.sh` installs under
+  `appconfig/infolib/<locale>/cde.dti`, with `DTINFOLIBDEFAULT=cde` /
+  `DTINFOLIBSEARCHPATH` from `cde-env.sh`; (2) the shim now publishes
+  `_SUN_TT_SESSION` / `TT_SESSION` on the root, which `tt_X_session()` needs
+  (dtinfo otherwise failed with `TT_ERR_NOMP`); (3) dtinfo declares the `DtInfo`
+  ptype, so `install-panel-data.sh` merges a DtInfo entry (start path rewritten
+  to this prefix) into the user ToolTalk types. The panel button runs dtinfo
+  through an action override (`config/dtwm-types/zz-info.dt`) because ttsession
+  does not auto-start the ptype here.
 * **Calendar Manager (fixed).** The session runs inside an unprivileged
   user+network namespace, where `geteuid()` is 0 (map-root-user), so the
   non-root path in `rpc.cmsd` never triggered and it fell back to the

@@ -215,4 +215,43 @@ else
     warn "no help volumes built; run scripts/build-help.sh to install Help"
 fi
 
+# 6. Information Manager.  dtinfo browses MMDB infolibs (built by
+#    scripts/build-infolib.sh), not the SDL help volumes dthelpview uses.
+#    Install the browser, its ToolTalk start helper and the cde infolib, and
+#    give the Front Panel's InfoManager button an action that runs it (the
+#    DtInfo ptype auto-start does not fire in this session).
+if [ -x "$CDE_BUILD/programs/dtinfo/dtinfo/src/dtinfo" ]; then
+    install -D -m 0755 "$CDE_BUILD/programs/dtinfo/dtinfo/src/dtinfo" \
+        "$CDE_ROOT/bin/dtinfo"
+    install -D -m 0755 "$CDE_BUILD/programs/dtinfo/clients/dtinfo_start/dtinfo_start" \
+        "$CDE_ROOT/infolib/etc/dtinfo_start"
+    if [ -d "$CDE_BUILD/doc/C/cde.dti" ]; then
+        for loc in C ${LANG:-} en_US.UTF-8; do
+            [ -n "$loc" ] || continue
+            install -d "$CDE_ROOT/appconfig/infolib/$loc"
+            rm -rf "$CDE_ROOT/appconfig/infolib/$loc/cde.dti"
+            cp -a "$CDE_BUILD/doc/C/cde.dti" "$CDE_ROOT/appconfig/infolib/$loc/cde.dti"
+        done
+        ok "installed dtinfo + the cde infolib"
+    else
+        warn "cde.dti not built; run scripts/build-infolib.sh for the InfoManager"
+    fi
+    install -D -m 0644 "$PROJECT_ROOT/config/dtwm-types/zz-info.dt" \
+        "$HOME/.dt/types/zz-info.dt"
+    # dtinfo declares the DtInfo process type; the base types.xdr has no DtInfo
+    # entry, and its start path is the classic /usr/dt.  Merge a copy with the
+    # path rewritten to this prefix into the user database.
+    _ttc="$CDE_ROOT/bin/tt_type_comp"
+    _ptype="$CDE_BUILD/programs/tttypes/dtinfo.ptype"
+    if [ -x "$_ttc" ] && [ -f "$_ptype" ]; then
+        cpp -I"$CDE_BUILD/programs/tttypes" "$_ptype" 2>/dev/null \
+            | sed "s|/usr/dt|$CDE_ROOT|g" > "$CDE_ROOT/infolib/etc/dtinfo.ptype"
+        "$_ttc" -sd user -m "$CDE_ROOT/infolib/etc/dtinfo.ptype" >/dev/null 2>&1 \
+            && ok "installed the DtInfo process type" \
+            || warn "could not install the DtInfo process type"
+    fi
+else
+    warn "dtinfo not built; the InfoManager button will do nothing"
+fi
+
 ok "panel data installed"

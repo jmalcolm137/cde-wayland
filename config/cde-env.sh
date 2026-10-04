@@ -25,6 +25,12 @@ export DTHELPSEARCHPATH="$CDE_ROOT/help/%L/%T/%N%S:$CDE_ROOT/help/%T/%N%S"
 export DTUSERSEARCHPATH="$HOME/.dt/%T/%N%S"
 export XAPPLRESDIR="$CDE_PREFIX/share/X11/app-defaults"
 
+# The Information Manager (dtinfo) browses MMDB "infolibs", not the SDL help
+# volumes dthelpview uses.  Its default infolib is "cde" (see dtsearchpath);
+# install-panel-data.sh puts it under appconfig/infolib from doc/C/cde.dti.
+export DTINFOLIBDEFAULT="${DTINFOLIBDEFAULT:-cde}"
+export DTINFOLIBSEARCHPATH="$CDE_ROOT/appconfig/infolib/%L/%I.dti"
+
 # The shim synthesises the root RESOURCE_MANAGER from files.  Point it at our
 # CDE-ish resources unless the user already has their own.
 if [ -z "${XENVIRONMENT:-}" ] && [ -f "$CDE_PREFIX/share/cde-wayland/Xresources" ]; then
