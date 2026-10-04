@@ -201,6 +201,11 @@ decorated window.
   windows), and `XGetTextProperty` left `*tp` uninitialised when a property was
   missing, which CDE's `DtWsmGetWorkspaceInfo` then passed to
   `XmbTextPropertyToTextList`. Both fixed.
+* **Panel apps launch (after the CDE_NO_WM_INFO fix).** The File Manager and
+  Text Editor now open normally from the Front Panel (they query the WSM at
+  startup). The Mailer starts but reports "Mailer has not been properly
+  installed ... the execution group is incorrectly set" — dtmail wants its
+  binary in the right setgid group; a separate packaging follow-up.
 * **ToolTalk in a namespace (fixed).** `ttsession` binds a privileged RPC port
   and registers over an abstract portmapper socket, so `run-session.sh` now
   prefers the unprivileged user+network namespace (+ `tt-portmapper`) whenever
