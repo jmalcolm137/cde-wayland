@@ -41,7 +41,7 @@
      if ( !initialized )
      {
        mode_t mode;
-@@ -1139,6 +1159,177 @@
+@@ -1139,6 +1159,181 @@
   * one, then we will fail and post an error dialog.
   */
  
@@ -176,9 +176,15 @@
 +    char cmd[2048];
 +    /* Run through /bin/sh, so $CDE_ROOT/$HOME expand.  The File Manager opens
 +     * the current directory, so cd first for the "home" and "trash" buttons. */
++    /* The File Manager buttons run dtfile with CDE_DTFILE_SHOW naming the
++     * view to open (the shim's private X root defeats dtfile's own
++     * single-server lock). */
 +    static const struct { const char *action; const char *cmd; } builtin[] = {
-+        { "DtfileHome",     "cd \"$HOME\" && exec \"$CDE_ROOT\"/bin/dtfile" },
-+        { "Dtfile",         "exec \"$CDE_ROOT\"/bin/dtfile" },
++        { "DtfileHome",     "exec \"$CDE_ROOT\"/bin/dtfile -dir \"$HOME\"" },
++        { "Dtfile",         "exec \"$CDE_ROOT\"/bin/dtfile -dir \"$PWD\"" },
++        { "Dttrash",        "mkdir -p \"$HOME/.dt/Trash\"; exec \"$CDE_ROOT\"/bin/dtfile -dir \"$HOME/.dt/Trash\"" },
++        { "Trash",          "mkdir -p \"$HOME/.dt/Trash\"; exec \"$CDE_ROOT\"/bin/dtfile -dir \"$HOME/.dt/Trash\"" },
++        { "Dtappmgr",       "mkdir -p \"$HOME/.dt/appmanager\"; exec \"$CDE_ROOT\"/bin/dtfile -dir \"$HOME/.dt/appmanager\"" },
 +        { "TextEditor",     "exec \"$CDE_ROOT\"/bin/dtpad" },
 +        { "Dtpad",          "exec \"$CDE_ROOT\"/bin/dtpad" },
 +        { "Dtmail",         "exec \"$CDE_ROOT\"/bin/dtmail" },
@@ -187,11 +193,9 @@
 +        { "Dtcm",           "exec \"$CDE_ROOT\"/bin/dtcm" },
 +        { "Dtterm",         "exec \"$CDE_ROOT\"/bin/dtterm" },
 +        { "Terminal",       "exec \"$CDE_ROOT\"/bin/dtterm" },
-+        { "Dttrash",        "mkdir -p \"$HOME/.dt/Trash\"; cd \"$HOME/.dt/Trash\" && exec \"$CDE_ROOT\"/bin/dtfile" },
-+        { "Trash",          "mkdir -p \"$HOME/.dt/Trash\"; cd \"$HOME/.dt/Trash\" && exec \"$CDE_ROOT\"/bin/dtfile" },
-+        { "Dtappmgr",       "mkdir -p \"$HOME/.dt/appmanager\"; cd \"$HOME/.dt/appmanager\" && exec \"$CDE_ROOT\"/bin/dtfile" },
-+        { "DtLoadInfoLib",  "exec \"$CDE_ROOT\"/bin/dtinfo_start" },
-+        { "DtPrintManager", "exec \"$CDE_ROOT\"/bin/dtprintinfo -all" },
++        /* The Information Manager (dtinfo) is not built; do nothing rather than
++         * post a ToolTalk error dialog. */
++        { "DtLoadInfoLib",  "true" },
 +        { NULL, NULL }
 +    };
 +    int i;
@@ -219,7 +223,7 @@
  static void 
  NoToolTalkConnectionError(
          Widget w,
-@@ -1146,6 +1337,8 @@
+@@ -1146,6 +1341,8 @@
  	Tt_status status)
  
  {
