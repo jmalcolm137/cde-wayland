@@ -48,5 +48,17 @@ else
     log "error: dtwm not found; run scripts/install-panel-data.sh"
 fi
 
+# Optional startup hook: a command run once, in the background, after the panel
+# is up and the ToolTalk session is available.  scripts/test-nested.sh points
+# this at scripts/wsm-smoke.sh to exercise the Workspace Manager.
+if [ -n "${CDE_STARTUP_HOOK:-}" ]; then
+    if [ -x "$CDE_STARTUP_HOOK" ]; then
+        log "running startup hook: $CDE_STARTUP_HOOK"
+        "$CDE_STARTUP_HOOK" &
+    else
+        log "warning: CDE_STARTUP_HOOK is not executable: $CDE_STARTUP_HOOK"
+    fi
+fi
+
 # The panel launches the rest; keep the session alive until logout.
 wait
