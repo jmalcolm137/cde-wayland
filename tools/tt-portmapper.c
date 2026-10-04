@@ -69,6 +69,11 @@ static unsigned long find_port(const struct pmap *m)
     return 0;
 }
 
+/* Defined with the rpcbind table below; PMAP v2 GETPORT falls back to it so a
+ * legacy query can find a service that registered via RPCB. */
+static unsigned long find_port_via_rpcb(unsigned long prog, unsigned long vers,
+                                        unsigned long prot);
+
 static void pmap_dispatch(struct svc_req *rqstp, SVCXPRT *transp)
 {
     struct pmap m;
@@ -104,6 +109,8 @@ static void pmap_dispatch(struct svc_req *rqstp, SVCXPRT *transp)
             return;
         }
         port = find_port(&m);
+        if (!port)
+            port = find_port_via_rpcb(m.pm_prog, m.pm_vers, m.pm_prot);
         svc_sendreply(transp, (xdrproc_t)xdr_u_long, (char *)&port);
         return;
     case PMAPPROC_DUMP: {
@@ -195,6 +202,32 @@ static const char *find_rpcb_vers(unsigned long prog, unsigned long vers,
             any = rbmap[i].addr;
     }
     return want_any ? any : NULL;
+}
+
+/* Legacy PMAP v2 GETPORT and modern rpcbind RPCB GETADDR are two views of the
+ * same service database.  ToolTalk registers with rpcbind (RPCB SET, which
+ * lands in rbmap) but looks the port up with the old PMAP v2 GETPORT, so a
+ * client that queried only the PMAP table would get 0 ("not registered") and
+ * report TT_ERR_NOMP.  Translate (program, version, protocol) to the rpcbind
+ * netid and read the port out of its "0.0.0.0.<hi>.<lo>" address. */
+static unsigned long find_port_via_rpcb(unsigned long prog, unsigned long vers,
+                                        unsigned long prot)
+{
+    const char *netid = (prot == IPPROTO_TCP) ? "tcp"
+                      : (prot == IPPROTO_UDP) ? "udp" : NULL;
+    if (!netid)
+        return 0;
+    for (int i = 0; i < nrb; i++) {
+        unsigned int a, b, c, d, hi, lo;
+        if (rbmap[i].prog != prog || rbmap[i].vers != vers)
+            continue;
+        if (strcmp(rbmap[i].netid, netid) != 0 || !rbmap[i].addr)
+            continue;
+        if (sscanf(rbmap[i].addr, "%u.%u.%u.%u.%u.%u",
+                   &a, &b, &c, &d, &hi, &lo) == 6)
+            return ((unsigned long)hi << 8) | lo;
+    }
+    return 0;
 }
 
 static void rpcb_dispatch(struct svc_req *rqstp, SVCXPRT *transp)
