@@ -46,6 +46,11 @@ if command -v dtwm >/dev/null 2>&1; then
     # CDE_NO_WM_INFO: do not let the shim publish the synthetic _MOTIF_WM_INFO;
     # dtwm checks it to decide whether a window manager is already running.
     CDE_NO_WM_INFO=1 dtwm -xrm '*useFrontPanel: True' &
+    # Apply the first workspace's backdrop: dtwm only runs the bridge on a
+    # workspace *change*, so the initial backdrop is set here.
+    if command -v cde-wsm-desk >/dev/null 2>&1; then
+        cde-wsm-desk 0 &
+    fi
 else
     log "error: dtwm not found; run scripts/install-panel-data.sh"
 fi

@@ -227,6 +227,13 @@ for c in "$DTWM_DIR/sys.dtwmrc" "$DTWM_DIR/sys.dtwmrc.src"; do
     fi
 done
 
+# Per-workspace backdrop map, applied by the WSM bridge (cde-wsm-desk).
+if [ -f "$PROJECT_ROOT/config/backdrops.conf" ]; then
+    install -D -m 0644 "$PROJECT_ROOT/config/backdrops.conf" \
+        "$CDE_ROOT/config/backdrops.conf"
+    ok "installed per-workspace backdrops"
+fi
+
 # 5. Help volumes.  DTHELPSEARCHPATH is $CDE_ROOT/help/%L/%T/%N%S with
 #    %T == "volumes", so the SDL volumes live in help[/<locale>]/volumes/.
 #    Build them with scripts/build-help.sh (needs ksh + nsgmls).

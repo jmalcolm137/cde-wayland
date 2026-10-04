@@ -278,6 +278,18 @@ dtwm-style icon box would need CoW to expose icons as a managed container.
   whose `WM_TRANSIENT_FOR` is that window, so a dialog stays directly above the
   application window it belongs to (patches/cow-transient-stacking.patch).
   Verified: click the main window and its dialog stays on top.
+* **Per-workspace backdrop (done).** In CDE dtwm draws a full-screen
+  override-redirect backdrop per workspace; the shim keeps those out of the
+  Wayland tree (they were painting the screen), and the desktop is drawn by CoW.
+  So the backdrop is applied through CoW instead: `config/backdrops.conf` maps a
+  workspace index to a colour (and optional tiling image), and the WSM bridge
+  (`cde-wsm-desk`, run on every workspace change) sets CoW's
+  `output.colour.background` / `output.image.background`. `cde-session.sh` sets
+  the first workspace's backdrop at startup, since dtwm only runs the bridge on
+  a change. Verified: the Front Panel switch changes the desktop colour
+  (ws1 0x3b4252, ws2 0x434c5e, ...). Backdrops set through dtstyle are not wired
+  yet: dtwm would have to report them (it applies them to its own backdrop
+  window), which is a small dtwm overlay if wanted.
 * **Full CDE root menu (done).** The desktop right-click menu is now CDE's
   `DtRootMenu` (labels and order from dtwm's `sys.dtwmrc`): **Workspace Menu**
   title, **Shuffle Up/Down** (`f.circle_up/down` -> `focus -nw/-pw`), **Refresh**
