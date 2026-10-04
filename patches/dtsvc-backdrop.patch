@@ -1,0 +1,35 @@
+--- a/lib/DtSvc/DtUtil1/WmChBackD.c
++++ b/lib/DtSvc/DtUtil1/WmChBackD.c
+@@ -41,6 +41,8 @@
+  ****************************************************************************
+  ************************************<+>*************************************/
+ #include <stdio.h>
++#include <stdlib.h>
++#include <unistd.h>
+ #include <X11/Xlib.h>
+ #include <X11/Xutil.h>
+ #include <X11/Xatom.h>
+@@ -131,8 +133,22 @@
+     }
+     else
+     /*
+-     * Get the workspace manager window
++     * cde-wayland: apply the chosen backdrop to CoW, which draws the desktop.
++     * The _DT_WM_REQUEST property appended below lives in this client's private
++     * X server, so dtwm never sees it (see docs/WORKSPACE-MANAGER.md).
+      */
++    {
++	const char *helper = getenv("CDE_WSM_BACKDROP_HELPER");
++	if (!helper || !*helper)
++	    helper = "cde-wsm-backdrop";
++	if (fork() == 0) {
++	    char cmd[4096];
++	    setsid();
++	    snprintf(cmd, sizeof cmd, "%s '%s'", helper, path);
++	    execl("/bin/sh", "sh", "-c", cmd, (char *)NULL);
++	    _exit(127);
++	}
++    }
+     if ((rval=_DtGetMwmWindow (display, root, &wmWindow)) == Success)
+     {
+ 	char *pch;

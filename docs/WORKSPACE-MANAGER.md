@@ -287,9 +287,20 @@ dtwm-style icon box would need CoW to expose icons as a managed container.
   `output.colour.background` / `output.image.background`. `cde-session.sh` sets
   the first workspace's backdrop at startup, since dtwm only runs the bridge on
   a change. Verified: the Front Panel switch changes the desktop colour
-  (ws1 0x3b4252, ws2 0x434c5e, ...). Backdrops set through dtstyle are not wired
-  yet: dtwm would have to report them (it applies them to its own backdrop
-  window), which is a small dtwm overlay if wanted.
+  (ws1 0x3b4252, ws2 0x434c5e, ...).
+* **Style Manager backdrops (done).** The Style Manager's Backdrop module now
+  works. CDE ships backdrop images under `programs/backdrops`; install-panel-data.sh
+  installs them (plus `.xpm` copies, since CoW only accepts `.png`/`.svg`/`.xpm`
+  and CDE's are `.pm`) and their description into `$HOME/.dt/backdrops`, where
+  dtstyle looks. dtstyle applies a backdrop by calling `_DtWsmChangeBackdrop()`,
+  which appends a request to the WM window's `_DT_WM_REQUEST` property — that
+  lives in the client's private X server and never reaches dtwm, so
+  `patches/dtsvc-backdrop.patch` also runs `cde-wsm-backdrop` with the chosen
+  name. The helper resolves the name to a file, sets CoW's
+  `output.image.background`, and records it per workspace, so `cde-wsm-desk`
+  restores it on the next switch (a workspace with no Style Manager choice uses
+  `config/backdrops.conf`). Verified: Apply sets the desktop to the chosen
+  image and switching away and back restores it.
 * **Full CDE root menu (done).** The desktop right-click menu is now CDE's
   `DtRootMenu` (labels and order from dtwm's `sys.dtwmrc`): **Workspace Menu**
   title, **Shuffle Up/Down** (`f.circle_up/down` -> `focus -nw/-pw`), **Refresh**

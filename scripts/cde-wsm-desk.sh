@@ -25,17 +25,32 @@ if [ "$_has_moocow" = 1 ]; then
     moocow desk -d "$idx" >/dev/null 2>&1 || true
 fi
 
-# Apply this workspace's backdrop (config/backdrops.conf: INDEX COLOUR [IMAGE]).
-_conf="${CDE_ROOT:-/usr/dt}/config/backdrops.conf"
-if [ "$_has_moocow" = 1 ] && [ -f "$_conf" ]; then
-    line=$(awk -v i="$idx" '$1 == i { print; exit }' "$_conf" 2>/dev/null)
-    colour=$(printf '%s\n' "$line" | awk '{ print $2 }')
-    image=$(printf '%s\n' "$line" | awk '{ print $3 }')
-    [ -n "$colour" ] && moocow set output.colour.background "$colour" >/dev/null 2>&1
-    if [ -n "$image" ]; then
-        moocow set output.image.background "$image" >/dev/null 2>&1
-    elif [ -n "$colour" ]; then
-        # Clearing the image so a previous workspace's image does not persist.
-        moocow set output.image.background none >/dev/null 2>&1
+# Apply this workspace's backdrop.  A backdrop chosen in the Style Manager for
+# this workspace (recorded by cde-wsm-backdrop) wins over the configured default
+# (config/backdrops.conf: INDEX COLOUR [IMAGE]).
+if [ "$_has_moocow" = 1 ]; then
+    _chosen="$state_dir/backdrop.$idx"
+    if [ -f "$_chosen" ]; then
+        _p=$(cat "$_chosen" 2>/dev/null)
+        case "$_p" in
+            *NoBackdrop*)
+                moocow set output.image.background none >/dev/null 2>&1 ;;
+            *)
+                [ -f "$_p" ] && moocow set output.image.background "$_p" >/dev/null 2>&1 ;;
+        esac
+    else
+        _conf="${CDE_ROOT:-/usr/dt}/config/backdrops.conf"
+        if [ -f "$_conf" ]; then
+            line=$(awk -v i="$idx" '$1 == i { print; exit }' "$_conf" 2>/dev/null)
+            colour=$(printf '%s\n' "$line" | awk '{ print $2 }')
+            image=$(printf '%s\n' "$line" | awk '{ print $3 }')
+            [ -n "$colour" ] && moocow set output.colour.background "$colour" >/dev/null 2>&1
+            if [ -n "$image" ]; then
+                moocow set output.image.background "$image" >/dev/null 2>&1
+            elif [ -n "$colour" ]; then
+                # Clear the image so a previous workspace's does not persist.
+                moocow set output.image.background none >/dev/null 2>&1
+            fi
+        fi
     fi
 fi

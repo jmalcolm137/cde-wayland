@@ -61,7 +61,7 @@ if [ -f "$PROJECT_ROOT/tools/cde-wsm.c" ]; then
 fi
 
 # Root-menu helpers: "Restart Workspace Manager..." and "Log out...".
-for h in cde-restart-dtwm.sh cde-logout.sh cde-toggle-frontpanel.sh; do
+for h in cde-restart-dtwm.sh cde-logout.sh cde-toggle-frontpanel.sh cde-wsm-backdrop.sh; do
     [ -f "$PROJECT_ROOT/scripts/$h" ] || continue
     install -D -m 0755 "$PROJECT_ROOT/scripts/$h" \
         "$CDE_ROOT/bin/$(basename "$h" .sh)"
@@ -232,6 +232,27 @@ if [ -f "$PROJECT_ROOT/config/backdrops.conf" ]; then
     install -D -m 0644 "$PROJECT_ROOT/config/backdrops.conf" \
         "$CDE_ROOT/config/backdrops.conf"
     ok "installed per-workspace backdrops"
+fi
+
+# Backdrop images + descriptions for the Style Manager (dtstyle).  dtstyle
+# looks in /usr/dt/backdrops and $HOME/.dt/backdrops; we cannot write /usr/dt,
+# so install into the user directory it also reads.
+if [ -d "$CDE_BUILD/programs/backdrops" ]; then
+    install -d "$HOME/.dt/backdrops" "$CDE_ROOT/backdrops"
+    cp -f "$CDE_BUILD/programs/backdrops"/* "$HOME/.dt/backdrops/" 2>/dev/null || true
+    cp -f "$CDE_BUILD/programs/backdrops"/* "$CDE_ROOT/backdrops/" 2>/dev/null || true
+    # CDE's .pm backdrops are XPM format; CoW only accepts .xpm, so keep a copy
+    # with that extension (cde-wsm-backdrop maps .pm -> .xpm).
+    for f in "$CDE_BUILD/programs/backdrops"/*.pm; do
+        [ -f "$f" ] || continue
+        cp -f "$f" "$HOME/.dt/backdrops/$(basename "$f" .pm).xpm"
+        cp -f "$f" "$CDE_ROOT/backdrops/$(basename "$f" .pm).xpm"
+    done
+    if [ -s "$CDE_BUILD/programs/dtstyle/Backdrops" ]; then
+        strip_nls "$CDE_BUILD/programs/dtstyle/Backdrops" \
+            > "$HOME/.dt/backdrops/desc.backdrops"
+    fi
+    ok "installed Style Manager backdrops ($(ls "$HOME/.dt/backdrops" | wc -l) files)"
 fi
 
 # 5. Help volumes.  DTHELPSEARCHPATH is $CDE_ROOT/help/%L/%T/%N%S with
