@@ -201,9 +201,13 @@ stage_libs() {
 stage_programs() {
     log "building CDE applications"
     local prog
-    for prog in dtcalc dtpad dthello dtstyle dtcm dtterm dtfile dthelp; do
+    for prog in dtcalc dtpad dthello dtstyle dtcm dtterm dtfile dthelp dtprintinfo; do
         [ -d "$CDE_BUILD/programs/$prog" ] || continue
         log "  make -C programs/$prog"
+        # Some programs generate headers under the `includes` target that the
+        # objects need but `make` (all) does not depend on (dtprintinfo's
+        # dtprintinfo_msg.h), so build includes first.
+        ( cd "$CDE_BUILD/programs/$prog" && make "${MAKE_OVERRIDES[@]}" includes >/dev/null 2>&1 || true )
         ( cd "$CDE_BUILD/programs/$prog" && make "${MAKE_OVERRIDES[@]}" -j"$JOBS" ) \
             || warn "programs/$prog failed (see the build log above)"
     done
@@ -242,7 +246,7 @@ stage_install() {
     # The Front Panel launches these by name from PATH, so they must land in
     # $CDE_ROOT/bin.
     local p
-    for p in dtcalc dtpad dthello dtstyle dtcm dtterm dtfile dthelp; do
+    for p in dtcalc dtpad dthello dtstyle dtcm dtterm dtfile dthelp dtprintinfo; do
         [ -d "$CDE_BUILD/programs/$p" ] || continue
         ( cd "$CDE_BUILD/programs/$p" && make "${MAKE_OVERRIDES[@]}" install ) \
             || warn "programs/$p install failed"

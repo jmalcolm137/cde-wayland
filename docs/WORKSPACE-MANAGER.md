@@ -225,10 +225,11 @@ dtwm-style icon box would need CoW to expose icons as a managed container.
   sub-panels (e.g. Personal Applications). Action databases hardcode the
   classic CDE prefix `/usr/dt`; `install-panel-data.sh` rewrites it to the
   install root, which is what makes actions such as Dthelpview and DtPrint
-  resolve. Still open (each needs another program built): the **Printer**
-  icon needs `dtprintinfo` (its build wants a generated `dtprintinfo_msg.h`),
-  and the **InfoManager** icon is a `TT_MSG` action (`DtInfo_LoadInfoLib`) that
-  needs the Information Manager `dtinfo`.
+  resolve. **Printer** now works too: `dtprintinfo` is built (its generated
+  `dtprintinfo_msg.h` needs the `includes` target first, which build-cde.sh now
+  runs before `make`) and opens its Printer Jobs view. Still open: the
+  **InfoManager** icon is a `TT_MSG` action (`DtInfo_LoadInfoLib`) that needs
+  the Information Manager `dtinfo`.
 * **Mailer.** The Mailer starts but reports "Mailer has not been properly
   installed ... the execution group is incorrectly set". dtmail requires a
   setgid `mail` group (it opens the mail spool with group privileges;
