@@ -113,16 +113,17 @@ X-property channel above.
 decorations flag set and `decorations == 0`, requests client-side decorations
 (`zxdg_toplevel_decoration_v1` `CLIENT_SIDE`) and suppresses the fallback
 titlebar it would otherwise draw. "MW_TRACE=1" logs `undecorated=` per toplevel.
-CoW, however, still frames such a window. River *does* relay the preference to
-CoW: `river_window_v1.decoration_hint` arrives as `PREFERS_CSD` (1) for the
-undecorated window (verified with a trace), but CoW stores
-`view->decoration_hint` and never consults it — `cow_view_configure()` always
-calls `river_window_v1_use_ssd()`. A one-line fix is not enough: `use_ssd` is
-also CoW's *decoration-ownership* flag, toggled by container/tab state and
-several call sites, so honouring the hint wants a separate
-"client-decorated / no frame" flag checked wherever the frame is created and
-drawn. Deferred (the CoW source was fetched to
-`~/.cache/cde-wayland/src/cow` for this investigation).
+CoW now honours it via `patches/cow-decoration-hint.patch` (applied by
+`build-cow.sh`). River relays the preference as
+`river_window_v1.decoration_hint`; CoW previously stored it and ignored it. The
+patch adds a dedicated `view->client_decorated` flag (kept separate from
+`use_ssd`, which tracks frame *ownership* for containers): for a CSD window
+`cow_view_configure()` calls `river_window_v1_use_csd()`,
+`cow_decoration_sync_metrics()` zeroes the border/titlebar metrics (so
+`cow_titlebar_frame_geometry()` reports frame == content), and
+`cow_decoration_update()` draws no frame. Verified: a window with
+`_MOTIF_WM_HINTS` decorations=0 reports frame 420x200 == content, while an
+otherwise identical decorated window reports 432x234.
 
 ### Step 3 — CDE chrome (user-facing UI)
 

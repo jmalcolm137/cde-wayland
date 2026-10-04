@@ -39,6 +39,18 @@ if ! command -v river >/dev/null 2>&1; then
     warn "install it (Arch: pacman -S river) or rerun with --with-river."
 fi
 
+# cde-wayland overlays for CoW (patches/cow-*.patch), applied in place to the
+# fetched source -- build-cow.sh --wipe only clears the build directory, so a
+# re-run finds them already applied and skips them.
+for p in "$PROJECT_ROOT"/patches/cow-*.patch; do
+    [ -f "$p" ] || continue
+    if patch -p1 --forward --batch -d "$COW_SRC" < "$p" >/dev/null 2>&1; then
+        ok "applied $(basename "$p")"
+    else
+        warn "patch $(basename "$p") did not apply (already applied?)"
+    fi
+done
+
 meson setup "$COW_SRC/build" "$COW_SRC" \
     --prefix="$COW_PREFIX" --buildtype=release --wipe >/dev/null
 ninja -C "$COW_SRC/build"

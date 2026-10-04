@@ -1,0 +1,97 @@
+diff --git a/include/cow/view.h b/include/cow/view.h
+index 2335cee..49a8a0c 100644
+--- a/include/cow/view.h
++++ b/include/cow/view.h
+@@ -353,6 +353,11 @@ struct cow_view {
+ 
+ 	/* Decoration hint from the window */
+ 	uint32_t decoration_hint;
++	/* The client asked to decorate itself (River decoration_hint
++	 * ONLY_SUPPORTS_CSD / PREFERS_CSD): draw no WM frame at all.  Kept
++	 * separate from use_ssd, which tracks frame *ownership* for
++	 * containers and is toggled as tabs change. */
++	bool     client_decorated;
+ 	uint32_t presentation_hint;
+ 
+ 	/* State tracking */
+diff --git a/src/decoration.c b/src/decoration.c
+index b473c9d..1ea881e 100644
+--- a/src/decoration.c
++++ b/src/decoration.c
+@@ -720,6 +720,17 @@ void
+ cow_decoration_sync_metrics(struct cow_view *view)
+ {
+ 	struct cow_view_decoration *dec = &view->dec;
++
++	/* A client-decorated window has no frame: content fills the whole
++	 * view, so every metric that would add a border or titlebar is zero.
++	 * cow_titlebar_frame_geometry() then reports frame == content. */
++	if (view->client_decorated) {
++		dec->border_width = 0;
++		dec->nominal_title_thickness = 0;
++		dec->title_thickness = 0;
++		return;
++	}
++
+ 	dec->border_width = view->cfg.border;
+ 
+ 	int h = view->cfg.titlebar.height;
+@@ -762,7 +773,7 @@ cow_decoration_update(struct cow_view *view, bool active)
+ {
+ 	struct cow_view_decoration *dec = &view->dec;
+ 
+-	if (!view->use_ssd || !view->has_dimensions)
++	if (!view->use_ssd || !view->has_dimensions || view->client_decorated)
+ 		return;
+ 
+ 	/*
+diff --git a/src/view.c b/src/view.c
+index 930db35..9bb3aeb 100644
+--- a/src/view.c
++++ b/src/view.c
+@@ -1035,6 +1035,22 @@ window_handle_decoration_hint(void *data, __unused struct river_window_v1 *rw,
+ {
+ 	struct cow_view *view = data;
+ 	view->decoration_hint = hint;
++	bool csd = hint == RIVER_WINDOW_V1_DECORATION_HINT_ONLY_SUPPORTS_CSD ||
++	    hint == RIVER_WINDOW_V1_DECORATION_HINT_PREFERS_CSD;
++	if (csd != view->client_decorated) {
++		view->client_decorated = csd;
++		/* A hint can arrive before or after the first configure; if we
++		 * already told River which decorations to use, correct it and
++		 * re-run the manage cycle so the frame is dropped or restored. */
++		if (view->configured) {
++			if (csd)
++				river_window_v1_use_csd(view->river_window);
++			else
++				river_window_v1_use_ssd(view->river_window);
++			view->use_ssd = !csd;
++			cow_update_request(COW_UPDATE_MANAGE);
++		}
++	}
+ }
+ 
+ static void
+@@ -1309,12 +1325,16 @@ cow_view_configure(struct cow_view *view)
+ 	if (view->configured)
+ 		return;
+ 
+-	/* Always use SSD -- the WM controls decorations, not the client.
+-	 * We tell the window to use SSD regardless of its preference.
+-	 * Windows that "only support CSD" will just draw their own
+-	 * decorations inside the content area, and we draw ours outside. */
+-	river_window_v1_use_ssd(view->river_window);
+-	view->use_ssd = true;
++	/* Decorate unless the client asked to do it itself (River relays its
++	 * zxdg-decoration preference as decoration_hint): a client-decorated
++	 * window gets no WM frame, so tell River CSD and leave use_ssd off. */
++	if (view->client_decorated) {
++		river_window_v1_use_csd(view->river_window);
++		view->use_ssd = false;
++	} else {
++		river_window_v1_use_ssd(view->river_window);
++		view->use_ssd = true;
++	}
+ 
+ 	/* Set capabilities */
+ 	river_window_v1_set_capabilities(view->river_window,
