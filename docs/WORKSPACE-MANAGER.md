@@ -113,12 +113,16 @@ X-property channel above.
 decorations flag set and `decorations == 0`, requests client-side decorations
 (`zxdg_toplevel_decoration_v1` `CLIENT_SIDE`) and suppresses the fallback
 titlebar it would otherwise draw. "MW_TRACE=1" logs `undecorated=` per toplevel.
-CoW, however, always answers `SERVER_SIDE` (mode 2), so it still frames such a
-window. Honouring the request needs a small CoW change: on
-`zxdg_toplevel_decoration_v1.set_mode(CLIENT_SIDE)`, reply `CLIENT_SIDE` and
-drop the frame. The CoW source is not currently checked out
-(`~/.cache/cde-wayland/src/cow`), so that is deferred; run
-`scripts/fetch-sources.sh` to bring it back.
+CoW, however, still frames such a window. River *does* relay the preference to
+CoW: `river_window_v1.decoration_hint` arrives as `PREFERS_CSD` (1) for the
+undecorated window (verified with a trace), but CoW stores
+`view->decoration_hint` and never consults it — `cow_view_configure()` always
+calls `river_window_v1_use_ssd()`. A one-line fix is not enough: `use_ssd` is
+also CoW's *decoration-ownership* flag, toggled by container/tab state and
+several call sites, so honouring the hint wants a separate
+"client-decorated / no frame" flag checked wherever the frame is created and
+drawn. Deferred (the CoW source was fetched to
+`~/.cache/cde-wayland/src/cow` for this investigation).
 
 ### Step 3 — CDE chrome (user-facing UI)
 
