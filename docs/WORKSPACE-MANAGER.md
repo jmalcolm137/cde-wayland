@@ -245,11 +245,16 @@ dtwm-style icon box would need CoW to expose icons as a managed container.
   where to put them; a Wayland toplevel cannot position itself either. So the
   shim reports each sub-panel as `FrontPanelSubpanel-<label>` and `config/cow.conf`
   gives each an `on-map` rule that strips the frame (`decor -a nodecor`) and
-  docks it (`window-move -x … -y …`): x aligns the sub-panel with its control,
-  y docks its bottom against the panel top. A style's `placement.x/y` is applied
-  before the view has an output and crashes CoW, hence the on-map rules. The x/y
-  values follow the default Front Panel on a centred 1280x720 output and would
-  need re-tuning for another panel layout or screen size.
+  docks it with `window-move -a bottom`, `-y -81` (lift it by the panel's height
+  onto the panel's top edge) and a fixed x nudge of
+  `(subpanel_width - panel_width)/2 + box offset`. Those are relative to the
+  panel and constant (the panel is centred with a fixed layout), so the docking
+  is **independent of screen size and position**. A style's `placement.x/y` is
+  applied before the view has an output and crashes CoW, hence the on-map rules.
+  Clicking the arrow again hides the sub-panel: dtwm's `ArrowCB` unposts with
+  `CallWmFunction(F_Kill)`, which does nothing now that CoW is the window
+  manager, so `patches/dtwm-subpanel-unpost.patch` also unmanages the shell
+  (which unmaps it and resets the arrow).
 * **Information Manager (done).** The panel's InfoManager button opens dtinfo,
   which shows the CDE "Book List". Three pieces were needed: (1) build the CDE
   documentation as an MMDB **infolib** — `scripts/build-infolib.sh` runs the
