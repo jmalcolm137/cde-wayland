@@ -259,6 +259,18 @@ dtwm-style icon box would need CoW to expose icons as a managed container.
   `river_window_v1` when a toplevel's surface is unmapped, so re-mapping the
   same `wl_surface` never announced a window again; the shim now rebuilds any
   unmapped toplevel on the next map, as it already did for popups.
+* **Window-management fidelity (in progress).** The shim now gives the
+  compositor a dialog's parent (`WM_TRANSIENT_FOR` -> `xdg_toplevel.set_parent`;
+  CoW logs the window as "parented") and forwards the ICCCM size constraints
+  (`WM_NORMAL_HINTS` `PMinSize`/`PMaxSize` -> `xdg_toplevel.set_min_size`/
+  `set_max_size`), so a fixed-size CDE dialog is actually fixed-size. `cow.conf`
+  switches focus to **click-to-focus** (CoW defaults to sloppy; MWM is click)
+  and adds the CDE/MWM key bindings (Alt+Space window menu, Alt+Tab/Alt+F6
+  next/prev, Alt+F3 lower, Alt+F4 close, Alt+F5 restore, Alt+F7 move, Alt+F8
+  size, Alt+F9 minimize, Alt+F10 maximize). Still open: keep a dialog stacked
+  directly above its parent (CoW stores the parent but only uses it for focus
+  fallback), and honour `_MOTIF_WM_HINTS` `functions` (disable resize/minimize/
+  maximize per window).
 * **Screen lock (done).** CDE's `LockDisplay` action is a ToolTalk request to
   dtsession, which we do not run, so `install-panel-data.sh` rewrites it in the
   installed databases to start **waylock** (River provides
