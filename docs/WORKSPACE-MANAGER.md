@@ -204,8 +204,13 @@ decorated window.
 * **Panel apps launch (after the CDE_NO_WM_INFO fix).** The File Manager and
   Text Editor now open normally from the Front Panel (they query the WSM at
   startup). The Mailer starts but reports "Mailer has not been properly
-  installed ... the execution group is incorrectly set" — dtmail wants its
-  binary in the right setgid group; a separate packaging follow-up.
+  installed ... the execution group is incorrectly set". dtmail requires a
+  setgid `mail` group (it opens the mail spool with group privileges;
+  `DTMAIL_DEFAULT_CREATE_MAILGROUP` is "mail"). The documented
+  `set __ignore_group_permissions` in `~/.mailrc` silences only the startup
+  check in `RoamApp.C`; opening the inbox still returns `DTME_BadRunGroup`.
+  Needs the setgid group at install time (root) or a non-spool mailbox; a
+  separate packaging follow-up, not a WSM issue.
 * **ToolTalk in a namespace (fixed).** `ttsession` binds a privileged RPC port
   and registers over an abstract portmapper socket, so `run-session.sh` now
   prefers the unprivileged user+network namespace (+ `tt-portmapper`) whenever
