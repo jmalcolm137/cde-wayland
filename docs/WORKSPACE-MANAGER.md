@@ -251,10 +251,14 @@ dtwm-style icon box would need CoW to expose icons as a managed container.
   panel and constant (the panel is centred with a fixed layout), so the docking
   is **independent of screen size and position**. A style's `placement.x/y` is
   applied before the view has an output and crashes CoW, hence the on-map rules.
-  Clicking the arrow again hides the sub-panel: dtwm's `ArrowCB` unposts with
-  `CallWmFunction(F_Kill)`, which does nothing now that CoW is the window
-  manager, so `patches/dtwm-subpanel-unpost.patch` also unmanages the shell
-  (which unmaps it and resets the arrow).
+  Clicking the arrow again hides the sub-panel, and clicking again re-opens it:
+  dtwm's `ArrowCB` unposts with `CallWmFunction(F_Kill)`, which does nothing now
+  that CoW is the window manager, so `patches/dtwm-subpanel-unpost.patch`
+  unmanages the shell instead (it unmaps, `SubpanelUnmapCB` resets the arrow,
+  and the shell survives).  Re-opening needed a shim fix too: River closes its
+  `river_window_v1` when a toplevel's surface is unmapped, so re-mapping the
+  same `wl_surface` never announced a window again; the shim now rebuilds any
+  unmapped toplevel on the next map, as it already did for popups.
 * **Information Manager (done).** The panel's InfoManager button opens dtinfo,
   which shows the CDE "Book List". Three pieces were needed: (1) build the CDE
   documentation as an MMDB **infolib** — `scripts/build-infolib.sh` runs the
