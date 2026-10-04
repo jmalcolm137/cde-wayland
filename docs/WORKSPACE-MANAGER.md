@@ -238,6 +238,18 @@ dtwm-style icon box would need CoW to expose icons as a managed container.
   check in `RoamApp.C`; opening the inbox still returns `DTME_BadRunGroup`.
   Needs the setgid group at install time (root) or a non-spool mailbox; a
   separate packaging follow-up, not a WSM issue.
+* **Front Panel sub-panels (CDE-like).** Clicking a panel box's up-arrow now
+  slides up an undecorated sub-panel docked flush above the panel, aligned with
+  the box it belongs to. dtwm creates each sub-panel as its own toplevel and,
+  because in real CDE dtwm positions them itself, never tells the window manager
+  where to put them; a Wayland toplevel cannot position itself either. So the
+  shim reports each sub-panel as `FrontPanelSubpanel-<label>` and `config/cow.conf`
+  gives each an `on-map` rule that strips the frame (`decor -a nodecor`) and
+  docks it (`window-move -x … -y …`): x aligns the sub-panel with its control,
+  y docks its bottom against the panel top. A style's `placement.x/y` is applied
+  before the view has an output and crashes CoW, hence the on-map rules. The x/y
+  values follow the default Front Panel on a centred 1280x720 output and would
+  need re-tuning for another panel layout or screen size.
 * **Information Manager (done).** The panel's InfoManager button opens dtinfo,
   which shows the CDE "Book List". Three pieces were needed: (1) build the CDE
   documentation as an MMDB **infolib** — `scripts/build-infolib.sh` runs the
