@@ -107,7 +107,13 @@ fi
 if ls "$TYPES_DIR"/*.dt >/dev/null 2>&1; then
     mkdir -p "$CDE_ROOT/appconfig/types/C"
     for f in "$TYPES_DIR"/*.dt; do
-        strip_nls "$f" > "$CDE_ROOT/appconfig/types/C/$(basename "$f")"
+        b="$(basename "$f")"
+        strip_nls "$f" > "$CDE_ROOT/appconfig/types/C/$b"
+        # Also the locale-independent directory: DTDATABASESEARCHPATH's default
+        # includes appconfig/types, and %L may not resolve to a directory we
+        # installed (e.g. en_CA.UTF-8).  Without this, actions such as Terminal
+        # are "not found".
+        cp "$CDE_ROOT/appconfig/types/C/$b" "$CDE_ROOT/appconfig/types/$b"
     done
     ok "installed $(ls "$TYPES_DIR"/*.dt | wc -l) action/datatype databases"
 else

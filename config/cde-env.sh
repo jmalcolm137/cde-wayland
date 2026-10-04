@@ -16,7 +16,9 @@ export CDE_PREFIX CDE_ROOT
 export DT_HOME="$CDE_ROOT"
 export PATH="$CDE_ROOT/bin:$CDE_PREFIX/bin:$PATH"
 
-# CDE help data, and the application defaults directory that holds Dtwm.
+# CDE help data, the action/datatype databases (the Front Panel's PUSH_ACTION
+# names resolve against these), and the application defaults that hold Dtwm.
+export DTDATABASESEARCHPATH="$CDE_ROOT/appconfig/types/%L:$CDE_ROOT/appconfig/types"
 export DTHELPSEARCHPATH="$CDE_ROOT/help/%L/%T/%N%S:$CDE_ROOT/help/%T/%N%S"
 export DTUSERSEARCHPATH="$HOME/.dt/%T/%N%S"
 export XAPPLRESDIR="$CDE_PREFIX/share/X11/app-defaults"
@@ -27,17 +29,12 @@ if [ -z "${XENVIRONMENT:-}" ] && [ -f "$CDE_PREFIX/share/cde-wayland/Xresources"
     export XENVIRONMENT="$CDE_PREFIX/share/cde-wayland/Xresources"
 fi
 
-# ToolTalk: the real CDE desktop (and the Front Panel's application launching)
-# uses it.  ttsession needs a portmapper; run-session.sh provides either the
-# system rpcbind or our unprivileged tools/tt-portmapper.  Best-effort: if no
-# portmapper is reachable ttsession just fails and apps still run.
-if [ -z "${TT_SESSION:-}" ] && command -v ttsession >/dev/null 2>&1; then
-    # Loopback/TCP sessions cannot use Unix-credential or DES auth; use none.
-    : "${TOOLTALK_AUTH_LEVEL:=none}"
-    export TOOLTALK_AUTH_LEVEL
-    _tt="$(ttsession -p 2>/dev/null | head -1 || true)"
-    if [ -n "$_tt" ]; then
-        export TT_SESSION="$_tt"
-    fi
-    unset _tt
-fi
+# ToolTalk-free launching.  CDE's Front Panel normally runs actions through
+# ToolTalk, but ToolTalk both needs a portmapper and (when it initialises)
+# stops dtwm from creating the Front Panel.  We ship a small build overlay
+# (patches/) that (a) skips dtwm's ToolTalk init so the panel is created and
+# (b) makes DtActionInvoke execute the action's command locally.  Setting
+# CDE_NO_TOOLTALK selects (a); no ttsession is started, so the action library
+# takes (b).
+export CDE_NO_TOOLTALK=1
+unset TT_SESSION

@@ -111,6 +111,19 @@ stage_prepare() {
         warn "no Motif bitmaps at $mb; dtcm/dthello may fail to compile"
         ok "host.def written; CppCmd -> $CPP_BIN"
     fi
+
+    # The only CDE source changes: the build overlays under patches/.  They let
+    # the Front Panel run without ToolTalk (skip dtwm's messaging init; execute
+    # actions locally).  Applied to the build tree only; source stays pristine.
+    local p
+    for p in "$PROJECT_ROOT"/patches/*.patch; do
+        [ -f "$p" ] || continue
+        if patch -p1 --forward --batch -d "$CDE_BUILD" < "$p" >/dev/null 2>&1; then
+            ok "applied $(basename "$p")"
+        else
+            warn "patch $(basename "$p") did not apply (already applied?)"
+        fi
+    done
 }
 
 IMAKE_BIN=""

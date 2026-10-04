@@ -1,0 +1,182 @@
+--- a/lib/DtSvc/DtUtil1/Action.c
++++ b/lib/DtSvc/DtUtil1/Action.c
+@@ -59,6 +59,10 @@
+ #include <X11/Xos_r.h>
+ 
+ #include <stdlib.h>
++#include <string.h>
++#include <unistd.h>
++#include <sys/wait.h>
++#include <dirent.h>
+ #include <limits.h>
+ 
+ #include <X11/Intrinsic.h>
+@@ -1139,6 +1143,159 @@
+  * one, then we will fail and post an error dialog.
+  */
+ 
++
++/* ------------------------------------------------------------------------
++ * CDE-on-Wayland: execute an action locally, without ToolTalk.
++ *
++ * ToolTalk is not usable in the Wayland session, so when DtActionInvoke would
++ * otherwise fail we resolve the action name against the .dt databases and run
++ * its command directly.  This makes the Front Panel's launch buttons work.
++ * This is a cde-wayland build overlay (patches/dt-action-local-exec.patch); it
++ * is not part of upstream CDE.
++ */
++static void
++_DtLocalActionExec(const char *cmd)
++{
++    char buf[4096];
++    const char *root = getenv("CDE_ROOT");
++    size_t o = 0;
++    if (!root || !*root) root = "/usr/dt";
++    while (*cmd && o < sizeof(buf) - 1) {
++        if (strncmp(cmd, "/usr/dt", 7) == 0) {
++            size_t rl = strlen(root);
++            if (o + rl > sizeof(buf) - 1) break;
++            memcpy(buf + o, root, rl); o += rl; cmd += 7;
++        } else {
++            buf[o++] = *cmd++;
++        }
++    }
++    buf[o] = '\0';
++    if (fork() == 0) {
++        setsid();
++        execl("/bin/sh", "sh", "-c", buf, (char *)NULL);
++        _exit(127);
++    }
++}
++
++static int
++_DtLocalActionFind(const char *name, char *out, size_t outsz, int depth)
++{
++    char paths[8192];
++    const char *dts = getenv("DTDATABASESEARCHPATH");
++    if (dts && *dts) {
++        strncpy(paths, dts, sizeof(paths) - 1); paths[sizeof(paths) - 1] = '\0';
++    } else {
++        const char *root = getenv("CDE_ROOT");
++        if (!root || !*root) root = "/usr/dt";
++        snprintf(paths, sizeof paths,
++                 "%s/appconfig/types:%s/appconfig/types/C", root, root);
++    }
++    char *save = NULL;
++    for (char *dir = strtok_r(paths, ":", &save); dir;
++         dir = strtok_r(NULL, ":", &save)) {
++        char d[4096];
++        char *pct = strstr(dir, "%L");
++        if (pct)
++            snprintf(d, sizeof d, "%.*sC%s", (int)(pct - dir), dir, pct + 2);
++        else
++            snprintf(d, sizeof d, "%s", dir);
++        DIR *dp = opendir(d);
++        if (!dp) continue;
++        struct dirent *de;
++        while ((de = readdir(dp)) != NULL) {
++            size_t nl = strlen(de->d_name);
++            char fp[4096], line[4096], mapact[512] = "", type[64] = "",
++                 execstr[2048] = "";
++            FILE *f;
++            int in = 0, found = 0;
++            if (nl < 3 || strcmp(de->d_name + nl - 3, ".dt") != 0) continue;
++            snprintf(fp, sizeof fp, "%s/%s", d, de->d_name);
++            f = fopen(fp, "r");
++            if (!f) continue;
++            while (fgets(line, sizeof line, f)) {
++                char *s = line;
++                while (*s == ' ' || *s == '\t') s++;
++                if (!in) {
++                    if (strncmp(s, "ACTION", 6) == 0 &&
++                        (s[6] == ' ' || s[6] == '\t')) {
++                        char *a = s + 7, *e;
++                        while (*a == ' ' || *a == '\t') a++;
++                        e = a;
++                        while (*e && *e != ' ' && *e != '\t' && *e != '\n' &&
++                               *e != '\r' && *e != '{') e++;
++                        if ((size_t)(e - a) == strlen(name) &&
++                            strncmp(a, name, (size_t)(e - a)) == 0) {
++                            in = 1; found = 1;
++                        }
++                    }
++                    continue;
++                }
++                if (*s == '}') { in = 0; continue; }
++                if (strncmp(s, "TYPE", 4) == 0) {
++                    char *v = s + 4; while (*v == ' ' || *v == '\t') v++;
++                    sscanf(v, "%63s", type);
++                } else if (strncmp(s, "MAP_ACTION", 10) == 0) {
++                    char *v = s + 10; while (*v == ' ' || *v == '\t') v++;
++                    sscanf(v, "%511s", mapact);
++                } else if (strncmp(s, "EXEC_STRING", 11) == 0) {
++                    char *v = s + 11; size_t l;
++                    while (*v == ' ' || *v == '\t') v++;
++                    l = strcspn(v, "\r\n");
++                    if (l >= sizeof execstr) l = sizeof execstr - 1;
++                    memcpy(execstr, v, l); execstr[l] = '\0';
++                }
++            }
++            fclose(f);
++            if (!found) continue;
++            closedir(dp);
++            if (strcmp(type, "COMMAND") == 0 && execstr[0]) {
++                snprintf(out, outsz, "%s", execstr);
++                return 1;
++            }
++            if (strcmp(type, "MAP") == 0 && mapact[0] && depth < 8)
++                return _DtLocalActionFind(mapact, out, outsz, depth + 1);
++            return 0;
++        }
++        closedir(dp);
++    }
++    return 0;
++}
++
++static int
++_DtLocalActionRun(const char *name)
++{
++    char cmd[2048];
++    static const struct { const char *action; const char *cmd; } builtin[] = {
++        { "DtfileHome",     "$CDE_ROOT/bin/dtfile -" },
++        { "Dtfile",         "$CDE_ROOT/bin/dtfile" },
++        { "TextEditor",     "$CDE_ROOT/bin/dtpad" },
++        { "Dtmail",         "$CDE_ROOT/bin/dtmail" },
++        { "OpenDtIntro",    "$CDE_ROOT/bin/dthello" },
++        { "DtPrintManager", "$CDE_ROOT/bin/dtprintinfo" },
++        { NULL, NULL }
++    };
++    int i;
++    if (!name || !*name) return 0;
++    if (_DtLocalActionFind(name, cmd, sizeof cmd, 0) && cmd[0]) {
++        _DtLocalActionExec(cmd);
++        return 1;
++    }
++    for (i = 0; builtin[i].action; i++) {
++        if (strcmp(name, builtin[i].action) == 0) {
++            const char *root = getenv("CDE_ROOT");
++            char expanded[2048];
++            if (root && strncmp(builtin[i].cmd, "$CDE_ROOT", 9) == 0)
++                snprintf(expanded, sizeof expanded, "%s%s", root,
++                         builtin[i].cmd + 9);
++            else
++                snprintf(expanded, sizeof expanded, "%s", builtin[i].cmd);
++            _DtLocalActionExec(expanded);
++            return 1;
++        }
++    }
++    return 0;
++}
++
+ static void 
+ NoToolTalkConnectionError(
+         Widget w,
+@@ -1146,6 +1303,8 @@
+ 	Tt_status status)
+ 
+ {
++	if (_DtLocalActionRun(actionName))
++		return;
+ 	XmString msg;
+ 	char *errmsg, *statmsg;
+                    
