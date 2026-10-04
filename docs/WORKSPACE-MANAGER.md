@@ -263,16 +263,21 @@ dtwm-style icon box would need CoW to expose icons as a managed container.
   compositor a dialog's parent (`WM_TRANSIENT_FOR` -> `xdg_toplevel.set_parent`;
   CoW logs the window as "parented") and forwards the ICCCM size constraints
   (`WM_NORMAL_HINTS` `PMinSize`/`PMaxSize` -> `xdg_toplevel.set_min_size`/
-  `set_max_size`), so a fixed-size CDE dialog is actually fixed-size, and
-  `_MOTIF_WM_HINTS` **functions** that drop RESIZE pin min == max. `cow.conf`
-  switches focus to **click-to-focus** (CoW defaults to sloppy; MWM is click)
-  and adds the CDE/MWM key bindings (Alt+Space window menu, Alt+Tab/Alt+F6
-  next/prev, Alt+F3 lower, Alt+F4 close, Alt+F5 restore, Alt+F7 move, Alt+F8
-  size, Alt+F9 minimize, Alt+F10 maximize). Still open: keep a dialog stacked
-  directly above its parent (CoW stores `view->parent` but only uses it for
-  focus fallback; its stack pass sorts by container depth, not transients), and
-  honour the MINIMIZE/MAXIMIZE/CLOSE function bits (needs CoW to hide titlebar
-  buttons per window).
+  `set_max_size`), so a fixed-size CDE dialog is actually fixed-size.
+  `_MOTIF_WM_HINTS` **functions** are honoured where a Wayland lever exists:
+  **RESIZE** dropped pins min == max, and **CLOSE** dropped makes the shim
+  ignore `xdg_toplevel.close` (close is the one function the client owns).
+  **MOVE/MINIMIZE/MAXIMIZE** are compositor-side and would need a client->WM
+  capability channel (CoW sets `river_window_v1` capabilities but nothing
+  carries the client's wish to CoW). `cow.conf` switches focus to
+  **click-to-focus** (CoW defaults to sloppy; MWM is click) and adds the
+  CDE/MWM key bindings (Alt+Space window menu, Alt+Tab/Alt+F6 next/prev,
+  Alt+F3 lower, Alt+F4 close, Alt+F5 restore, Alt+F7 move, Alt+F8 size,
+  Alt+F9 minimize, Alt+F10 maximize).
+* **Transient stacking (CoW patch, done).** Raising a window raises the views
+  whose `WM_TRANSIENT_FOR` is that window, so a dialog stays directly above the
+  application window it belongs to (patches/cow-transient-stacking.patch).
+  Verified: click the main window and its dialog stays on top.
 * **Full CDE root menu (done).** The desktop right-click menu is now CDE's
   `DtRootMenu` (labels and order from dtwm's `sys.dtwmrc`): **Workspace Menu**
   title, **Shuffle Up/Down** (`f.circle_up/down` -> `focus -nw/-pw`), **Refresh**
