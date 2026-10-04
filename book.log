@@ -1,2 +1,0 @@
-/usr/bin/nsgmls:E: cannot find "Textedit/book.sgm"; tried "Textedit/book.sgm", "./Textedit/book.sgm"
-/usr/bin/nsgmls:/home/jmalcolm/.local/cde-wayland/build/cde/programs/dtdocbook/doc2sdl/docbook.sgml:141:1:E: end of document in prolog
