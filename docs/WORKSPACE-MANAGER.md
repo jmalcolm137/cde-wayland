@@ -219,9 +219,17 @@ dtwm-style icon box would need CoW to expose icons as a managed container.
   windows), and `XGetTextProperty` left `*tp` uninitialised when a property was
   missing, which CDE's `DtWsmGetWorkspaceInfo` then passed to
   `XmbTextPropertyToTextList`. Both fixed.
-* **Panel apps launch (after the CDE_NO_WM_INFO fix).** The File Manager and
-  Text Editor now open normally from the Front Panel (they query the WSM at
-  startup). The Mailer starts but reports "Mailer has not been properly
+* **Panel apps and sub-panels (c).** Opening from the Front Panel now work:
+  File Manager (dtfile), Text Editor (dtpad), Calendar (dtcm, month view),
+  Style Manager (dtstyle), Application Manager (Dtappmgr) and the up-arrow
+  sub-panels (e.g. Personal Applications). Action databases hardcode the
+  classic CDE prefix `/usr/dt`; `install-panel-data.sh` rewrites it to the
+  install root, which is what makes actions such as Dthelpview and DtPrint
+  resolve. Still open (each needs another program built): the **Printer**
+  icon needs `dtprintinfo` (its build wants a generated `dtprintinfo_msg.h`),
+  and the **InfoManager** icon is a `TT_MSG` action (`DtInfo_LoadInfoLib`) that
+  needs the Information Manager `dtinfo`.
+* **Mailer.** The Mailer starts but reports "Mailer has not been properly
   installed ... the execution group is incorrectly set". dtmail requires a
   setgid `mail` group (it opens the mail spool with group privileges;
   `DTMAIL_DEFAULT_CREATE_MAILGROUP` is "mail"). The documented

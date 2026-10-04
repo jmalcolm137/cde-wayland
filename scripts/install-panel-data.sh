@@ -142,7 +142,11 @@ if ls "$TYPES_DIR"/*.dt >/dev/null 2>&1; then
     mkdir -p "$CDE_ROOT/appconfig/types/C"
     for f in "$TYPES_DIR"/*.dt; do
         b="$(basename "$f")"
-        strip_nls "$f" > "$CDE_ROOT/appconfig/types/C/$b"
+        # Action definitions hardcode the classic CDE prefix /usr/dt; rewrite
+        # it to this installation's root so Dthelpview, DtPrint etc. find
+        # their programs.
+        strip_nls "$f" | sed "s|/usr/dt/|$CDE_ROOT/|g" \
+            > "$CDE_ROOT/appconfig/types/C/$b"
         # Also the locale-independent directory: DTDATABASESEARCHPATH's default
         # includes appconfig/types, and %L may not resolve to a directory we
         # installed (e.g. en_CA.UTF-8).  Without this, actions such as Terminal
