@@ -43,3 +43,11 @@ fi
 # the one exception: cde-session.sh starts it with CDE_NO_TOOLTALK so it skips
 # its own messaging/workspace-manager registration and simply creates the Front
 # Panel.  Do not clobber TT_SESSION here.
+
+# _MOTIF_WM_HINTS: the compositor's WM (CoW) cannot refuse a command for one
+# window, so xlib-wayland relays the functions a client allows to CoW by hiding
+# the matching titlebar buttons (config/cow.conf defines the cde-func-* decor
+# profiles).  CDE_MOTIF_HELPER names the command the shim runs, once per
+# disabled button; it retries until CoW knows the window.  Set it explicitly
+# empty to disable the relay.
+export CDE_MOTIF_HELPER="${CDE_MOTIF_HELPER-cde-motif-apply}"

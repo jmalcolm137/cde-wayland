@@ -264,12 +264,17 @@ dtwm-style icon box would need CoW to expose icons as a managed container.
   CoW logs the window as "parented") and forwards the ICCCM size constraints
   (`WM_NORMAL_HINTS` `PMinSize`/`PMaxSize` -> `xdg_toplevel.set_min_size`/
   `set_max_size`), so a fixed-size CDE dialog is actually fixed-size.
-  `_MOTIF_WM_HINTS` **functions** are honoured where a Wayland lever exists:
+  `_MOTIF_WM_HINTS` **functions** are honoured as far as CoW allows.
   **RESIZE** dropped pins min == max, and **CLOSE** dropped makes the shim
   ignore `xdg_toplevel.close` (close is the one function the client owns).
-  **MOVE/MINIMIZE/MAXIMIZE** are compositor-side and would need a client->WM
-  capability channel (CoW sets `river_window_v1` capabilities but nothing
-  carries the client's wish to CoW). `cow.conf` switches focus to
+  **MINIMIZE/MAXIMIZE** dropped make the shim hide the matching titlebar button:
+  CoW cannot refuse a command for one window, but it can hide a button with a
+  sparse decor profile, so the shim runs `cde-motif-apply` (a retrying wrapper
+  around `moocow`, since the title may not have reached CoW yet) to apply
+  `cde-func-min` / `cde-func-max` (config/cow.conf) to the window by title. This
+  keeps CoW stock; the consequence is that the **global** keyboard bindings
+  (Alt+F9/F10) and the CDE window menu still offer minimize/maximize, and
+  **MOVE** (which has no button) is not restricted. `cow.conf` switches focus to
   **click-to-focus** (CoW defaults to sloppy; MWM is click) and adds the
   CDE/MWM key bindings (Alt+Space window menu, Alt+Tab/Alt+F6 next/prev,
   Alt+F3 lower, Alt+F4 close, Alt+F5 restore, Alt+F7 move, Alt+F8 size,
