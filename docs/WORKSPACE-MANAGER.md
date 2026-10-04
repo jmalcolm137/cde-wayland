@@ -108,12 +108,42 @@ X-property channel above.
   per-workspace placement.
 
 ### Step 3 — CDE chrome (user-facing UI)
-* CDE **root/desktop menu**: the workspace menu (switch / Add / Delete / Rename
-  Workspace) from `sys.dtwmrc`'s `builtinRootMenu`, replacing CoW's `CDEApps`
-  menu (or added alongside).
-* CDE **titlebar menu** (Minimize, Occupy Workspace, Move/Resize, Close) with
-  CDE/MWM colors, matching `sys.dtwmrc`'s `builtinSystemMenu`.
-* **Workspace titles** and the **icon box**.
+
+**3a. Desktop / root Workspace Manager menu (required).**
+Clicking on the desktop (root window) must open the CDE Workspace Manager menu,
+not CoW's `CDEApps` menu. This is dtwm's `builtinRootMenu` from
+`sys.dtwmrc`, which we already install, and in CDE it is the primary place the
+Workspace Manager presents itself to the user:
+
+* a **Workspaces** submenu listing every desk (switch to it), with the current
+  desk marked;
+* **Add Workspace…** / **Delete Workspace…** / **Rename…** (the latter via the
+  switch's inline rename field);
+* **Window Ops**: Shuffle Up/Down, Refresh, Pack Icons, Restart Workspace
+  Manager;
+* the CDE/MWM look (colors, separators, check marks).
+
+Implementation options, in order of preference:
+1. Have CoW's menu system load dtwm's `builtinRootMenu`/`sys.dtwmrc` menu
+   definition and dispatch its entries to the WSM (switch/add/delete) and CoW
+   (window ops). This keeps one menu engine.
+2. Bridge CoW's root menu to the WSM: build an equivalent CDE-styled menu and
+   route the workspace entries over `DtWsm`.
+3. Run real dtwm's menu on the desktop: dtwm cannot see the root (private X
+   server), so this needs the shim to hand dtwm the root menu's clicks — only if
+   1 and 2 prove too limited.
+
+**3b. CDE titlebar menu.** Minimize / Occupy Workspace / Move / Resize / Close,
+matching `sys.dtwmrc`'s `builtinSystemMenu`, instead of CoW's decoration menu.
+
+**3c. Workspace titles** and the **icon box.**
+
+### What the user will see (acceptance)
+* Front Panel One/Two/Three/Four switches the desk.
+* Clicking the desktop opens the **Workspace Manager menu** (switch / add /
+  delete / rename workspace, window ops).
+* Windows have CDE titlebar menus.
+* Workspace titles and the icon box behave like CDE.
 
 ### Step 4 — optional: WM rewrite
 * Only if "dtwm is literally the WM" is still wanted after steps 1–3: replace

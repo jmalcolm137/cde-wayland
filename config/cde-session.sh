@@ -41,7 +41,9 @@ fi
 # the WM) and it stopped the Front Panel from being created.
 if command -v dtwm >/dev/null 2>&1; then
     log "starting the CDE Front Panel (dtwm, contained)"
-    CDE_NO_TOOLTALK=1 dtwm -xrm '*useFrontPanel: True' &
+    # CDE_NO_WM_INFO: do not let the shim publish the synthetic _MOTIF_WM_INFO;
+    # dtwm checks it to decide whether a window manager is already running.
+    CDE_NO_WM_INFO=1 dtwm -xrm '*useFrontPanel: True' &
 else
     log "error: dtwm not found; run scripts/install-panel-data.sh"
 fi

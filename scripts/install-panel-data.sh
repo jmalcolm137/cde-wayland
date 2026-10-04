@@ -36,6 +36,14 @@ fi
 [ -x "$DTWM_DIR/dtfplist" ] && install -D -m 0755 "$DTWM_DIR/dtfplist" \
     "$CDE_PREFIX/bin/dtfplist"
 
+# Workspace Manager bridge: dtwm's workspace changes switch CoW's desks and
+# record the current workspace for the shim's synthetic WM window.
+if [ -f "$PROJECT_ROOT/scripts/cde-wsm-desk.sh" ]; then
+    install -D -m 0755 "$PROJECT_ROOT/scripts/cde-wsm-desk.sh" \
+        "$CDE_PREFIX/bin/cde-wsm-desk"
+    ok "installed cde-wsm-desk (Workspace Manager bridge)"
+fi
+
 # Calendar Manager service for dtcm.  The build overlay (patches/) lets it run
 # as the user with a private spool directory.
 if [ -x "$CDE_BUILD/programs/dtcm/server/rpc.cmsd" ]; then

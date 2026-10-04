@@ -1,0 +1,29 @@
+--- a/programs/dtwm/WmWrkspace.c
++++ b/programs/dtwm/WmWrkspace.c
+@@ -128,6 +128,26 @@
+     if (pNewWS == pSD->pActiveWS)
+ 	return;				/* already there */
+ 
++    /* cde-wayland: mirror the workspace change onto CoW's desks and record the
++     * current workspace for the shim's synthetic WM window (see
++     * docs/WORKSPACE-MANAGER.md). */
++    {
++	int wsi = -1, wi;
++	for (wi = 0; wi < pSD->numWorkspaces; wi++)
++	    if (&pSD->pWS[wi] == pNewWS) { wsi = wi; break; }
++	if (wsi >= 0) {
++	    char cmd[512];
++	    const char *helper = getenv("CDE_WSM_DESK_HELPER");
++	    snprintf(cmd, sizeof cmd, "%s %d",
++		     (helper && *helper) ? helper : "cde-wsm-desk", wsi);
++	    if (fork() == 0) {
++		setsid();
++		execl("/bin/sh", "sh", "-c", cmd, (char *)NULL);
++		_exit(127);
++	    }
++	}
++    }
++
+     pSD->pLastWS = pSD->pActiveWS;
+ 
+     /*
