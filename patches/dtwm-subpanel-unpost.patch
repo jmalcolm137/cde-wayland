@@ -1,13 +1,17 @@
 --- a/programs/dtwm/Callback.c
 +++ b/programs/dtwm/Callback.c
-@@ -236,6 +236,11 @@
-       /*  Execute the window manager function to unpost the subpanel  */
- 
-       CallWmFunction (F_Kill, NULL, subpanel_data->shell, NULL);
-+
-+      /* cde-wayland: CoW is the window manager, so F_Kill does not unmap the
-+       * sub-panel; unmanage the shell ourselves so it actually disappears.
-+       * Unmapping fires SubpanelUnmapCB, which resets the arrow image. */
+@@ -233,9 +233,12 @@
+    }
+    else
+    {
+-      /*  Execute the window manager function to unpost the subpanel  */
+-
+-      CallWmFunction (F_Kill, NULL, subpanel_data->shell, NULL);
++      /*  Unpost the subpanel.  In real CDE the window manager does this
++       *  (CallWmFunction(F_Kill, ...)); CoW is the window manager here and does
++       *  not know about dtwm's sub-panels, so unmanage the shell ourselves.
++       *  That unmaps it and fires SubpanelUnmapCB, which resets the arrow
++       *  image, leaving the shell intact for the next posting. */
 +      XtUnmanageChild (subpanel_data->shell);
     }
  }
