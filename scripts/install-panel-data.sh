@@ -172,7 +172,17 @@ if ls "$CDE_BUILD/doc/help-sdl"/*.sdl >/dev/null 2>&1; then
     mkdir -p "$CDE_ROOT/help/volumes" "$CDE_ROOT/help/C/volumes"
     cp "$CDE_BUILD/doc/help-sdl"/*.sdl "$CDE_ROOT/help/volumes/"
     cp "$CDE_BUILD/doc/help-sdl"/*.sdl "$CDE_ROOT/help/C/volumes/"
-    ok "installed $(ls "$CDE_ROOT/help/volumes" | wc -l) help volumes"
+    # The SDL references its art as "./<Volume>/graphics/<file>", so each
+    # volume's graphics live in a sibling directory named after the volume.
+    for g in "$CDE_BUILD/doc/C/help"/*/graphics; do
+        [ -d "$g" ] || continue
+        v="$(basename "$(dirname "$g")")"
+        mkdir -p "$CDE_ROOT/help/volumes/$v/graphics" \
+                 "$CDE_ROOT/help/C/volumes/$v/graphics"
+        cp -a "$g/." "$CDE_ROOT/help/volumes/$v/graphics/"
+        cp -a "$g/." "$CDE_ROOT/help/C/volumes/$v/graphics/"
+    done
+    ok "installed $(ls "$CDE_ROOT/help/volumes"/*.sdl 2>/dev/null | wc -l) help volumes + graphics"
 else
     warn "no help volumes built; run scripts/build-help.sh to install Help"
 fi
