@@ -105,6 +105,40 @@ else
     die "Dtwm.defs is missing/empty; run the 'panel' stage of build-cde.sh"
 fi
 
+# 1b. The other CDE applications' own defaults.  These matter for behaviour, not
+# just looks: Dtfile's `Dtfile*DtIcon*behavior: icon_drag` is what makes the
+# File Manager open a folder on double-click (without it the DtIcon widget
+# defaults to XmICON_BUTTON and fires XmCR_ACTIVATE, which dtfile ignores).  The
+# build leaves the C-locale files in localized/C/app-defaults; each starts with
+# `#include "Dt"` for the shared desktop defaults, but the shim's Xrm parser
+# ignores #directives, so inline that include here.  Dtwm is installed above.
+_ap_src="$CDE_BUILD/programs/localized/C/app-defaults"
+if [ -d "$_ap_src" ]; then
+    for _f in "$_ap_src"/*; do
+        _b="$(basename "$_f")"
+        case "$_b" in
+            *.nls|*.tmsg|Imakefile|Makefile|Makefile.bak|Dtwm) continue ;;
+        esac
+        [ -f "$_f" ] || continue
+        _ap_tmp="$(mktemp)"
+        awk -v dir="$_ap_src" '
+            /^#include[ \t]+"/ {
+                name = $0
+                sub(/^#include[ \t]+"/, "", name)
+                sub(/".*$/, "", name)
+                while ((getline line < (dir "/" name)) > 0) print line
+                close(dir "/" name)
+                next
+            }
+            { print }
+        ' "$_f" > "$_ap_tmp"
+        strip_nls "$_ap_tmp" > "$CDE_PREFIX/share/X11/app-defaults/$_b"
+        chmod 0644 "$CDE_PREFIX/share/X11/app-defaults/$_b"
+        rm -f "$_ap_tmp"
+    done
+    ok "installed CDE application defaults (Dtfile, Dtterm, ...)"
+fi
+
 # 2. Front panel database.  _DtGetDatabaseDirPaths() searches
 #    $CDE_ROOT/appconfig/types[/%L]; FrontPanelReadDatabases additionally
 #    prepends $HOME/.dt/types/fp_dynamic.
