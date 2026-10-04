@@ -12,7 +12,7 @@
 set -u
 
 idx="${1:-0}"
-names="${2:-One,Two,Three,Four}"
+names="${2:-ws0,ws1,ws2,ws3}"
 state_dir="${XDG_RUNTIME_DIR:-/tmp}/cde-wayland"
 mkdir -p "$state_dir" 2>/dev/null || true
 printf 'names=%s\ncurrent=%s\n' "$names" "$idx" > "$state_dir/workspace"
