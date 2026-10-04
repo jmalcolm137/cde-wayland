@@ -107,6 +107,17 @@ X-property channel above.
 * Teach CoW to honour them: true MWM decorations, undecorated/torn-off windows,
   per-workspace placement.
 
+**Progress.** The shim now reads `_MOTIF_WM_HINTS` and, for a window with the
+decorations flag set and `decorations == 0`, requests client-side decorations
+(`zxdg_toplevel_decoration_v1` `CLIENT_SIDE`) and suppresses the fallback
+titlebar it would otherwise draw. "MW_TRACE=1" logs `undecorated=` per toplevel.
+CoW, however, always answers `SERVER_SIDE` (mode 2), so it still frames such a
+window. Honouring the request needs a small CoW change: on
+`zxdg_toplevel_decoration_v1.set_mode(CLIENT_SIDE)`, reply `CLIENT_SIDE` and
+drop the frame. The CoW source is not currently checked out
+(`~/.cache/cde-wayland/src/cow`), so that is deferred; run
+`scripts/fetch-sources.sh` to bring it back.
+
 ### Step 3 — CDE chrome (user-facing UI)
 
 **3a. Desktop / root Workspace Manager menu (required).**
