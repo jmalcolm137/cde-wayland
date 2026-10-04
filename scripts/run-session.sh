@@ -123,4 +123,9 @@ fi
 TT_ARGS+=( -c "$conf_home/river/init" )
 
 log "starting River under a ToolTalk session (init: $conf_home/river/init)"
+# A fresh session starts with auto-repeat on and a clean atom table; the shim
+# shares both through XDG_RUNTIME_DIR, so stale state from a previous session
+# would otherwise leak in.
+_rt="${XDG_RUNTIME_DIR:-/tmp}"
+rm -f "$_rt/xlib-wayland-keyboard" "$_rt/xlib-wayland-atoms"
 exec ttsession "${TT_ARGS[@]}"
