@@ -162,6 +162,19 @@ decorated window.
 
 **3c. Workspace titles** and the **icon box.**
 
+*Titles (done).* dtwm owns the workspace titles; renaming one (`cde-wsm rename N
+TITLE` -> `DtWsmSetWorkspaceTitle`) updates the Front Panel switch label and the
+panel's own title, and switching to it works. Verified: renaming workspace 1 to
+"Main" changed the panel's second switch to "Main".
+
+*Icon box (approximated).* CDE's icon box is a dtwm container; here minimized
+windows are CoW icons, so there is no separate box window. `config/cow.conf`
+gives them a CDE look instead: 64px app icons, a CDE-grey body, a flat title
+plate, MWM active colours, and `icon-placement box full` with `compact` so they
+collect along the bottom of the usable area. Verified: minimizing the File
+Manager drops an icon with its title plate into the bottom-left box. A real
+dtwm-style icon box would need CoW to expose icons as a managed container.
+
 ### What the user will see (acceptance)
 * Front Panel One/Two/Three/Four switches the desk.
 * Clicking the desktop opens the **Workspace Manager menu** (switch / add /
