@@ -37,16 +37,30 @@ command -v cow >/dev/null 2>&1 || die "cow not found; run scripts/build-cow.sh"
 portmapper_ok() { rpcinfo -T tcp 127.0.0.1 >/dev/null 2>&1; }
 PM_PID=""
 
+# ToolTalk's ttsession binds a privileged RPC port (~912) and registers over an
+# abstract portmapper socket.  A normal user can do neither, so the reliable
+# setup is an unprivileged user+network namespace with our own tt-portmapper.
+# Prefer it whenever the tools exist and we are not already root/inside the
+# namespace: a system rpcbind being reachable is *not* enough, because ttsession
+# still has to bind its own port.  Set CDE_NO_NS=1 to force the direct path.
+ns_feasible() {
+    [ "${CDE_SESSION_NS:-0}" != 1 ] && [ "${CDE_NO_NS:-0}" != 1 ] &&
+    [ "$(id -u)" -ne 0 ] &&
+    command -v unshare >/dev/null 2>&1 &&
+    [ -x "$CDE_PREFIX/bin/tt-portmapper" ]
+}
+
+if ns_feasible; then
+    log "re-running in an unprivileged user+network namespace (ToolTalk portmapper)"
+    _args=(--nested)
+    [ "$NESTED" = 1 ] || _args=()
+    exec env CDE_SESSION_NS=1 CDE_NESTED="$NESTED" \
+        unshare --user --map-root-user --net -- \
+        bash -c 'ip link set lo up 2>/dev/null || true; exec "$0" "$@"' \
+        "$0" "${_args[@]}"
+fi
+
 if [ "${CDE_SESSION_NS:-0}" != 1 ] && ! portmapper_ok; then
-    if command -v unshare >/dev/null 2>&1 && [ -x "$CDE_PREFIX/bin/tt-portmapper" ]; then
-        log "no rpcbind; re-running in an unprivileged user+network namespace"
-        _args=(--nested)
-        [ "$NESTED" = 1 ] || _args=()
-        exec env CDE_SESSION_NS=1 CDE_NESTED="$NESTED" \
-            unshare --user --map-root-user --net -- \
-            bash -c 'ip link set lo up 2>/dev/null || true; exec "$0" "$@"' \
-            "$0" "${_args[@]}"
-    fi
     warn "no portmapper reachable: the Front Panel will not launch applications."
     warn "Start rpcbind (sudo systemctl start rpcbind) or build scripts/build-tools.sh."
 fi

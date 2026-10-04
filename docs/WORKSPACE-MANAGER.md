@@ -180,6 +180,21 @@ decorated window.
   output white). The Front Panel's switch highlight follows the change too.
 * **Step 1 done.** Switching workspaces from the Front Panel moves CoW's desk,
   the panel reflects it, and every client's `DtWsmGetCurrentWorkspace` agrees.
+* **Workspace add/delete/rename (done).** `cde-wsm` gained `add`/`delete`/
+  `rename`, and dtwm's `SetWorkspaceListProperty` now writes the workspace set
+  to the shim's state file, so a workspace added or deleted from the Front Panel
+  reaches every client. Two crashes on the way: `AddPersistentWindows`
+  dereferenced an empty client list (dtwm as a contained panel manages no
+  windows), and `XGetTextProperty` left `*tp` uninitialised when a property was
+  missing, which CDE's `DtWsmGetWorkspaceInfo` then passed to
+  `XmbTextPropertyToTextList`. Both fixed.
+* **ToolTalk in a namespace (fixed).** `ttsession` binds a privileged RPC port
+  and registers over an abstract portmapper socket, so `run-session.sh` now
+  prefers the unprivileged user+network namespace (+ `tt-portmapper`) whenever
+  the tools exist and we are not root — a reachable system rpcbind is not
+  enough. `tt-portmapper` also answers legacy PMAP v2 `GETPORT` from its rpcbind
+  table; without that libtt got port 0 and reported `TT_ERR_NOMP` even though
+  `ttsession` was running, and dtwm showed "Could not connect to ToolTalk".
 * **Live workspace state (shim, done).** The workspace list/current live in the
   WSM bridge's state file, so the shim now re-reads it on every
   `XGetWindowProperty` for `_DT_WORKSPACE_LIST` / `_DT_WORKSPACE_CURRENT` on its
