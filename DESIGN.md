@@ -211,9 +211,10 @@ requires `rpcbind`. The panel itself launches the CDE applications; CoW menus
 and key bindings are provided as a secondary launcher (`config/cow.conf`).
 
 Workspace switching is the one place the panel cannot drive CoW directly: the
-panel's workspace buttons change dtwm's internal state, not CoW's desks. For v1
-CoW owns the desks and the panel's workspace row is cosmetic; wiring the
-buttons to `moocow` is a follow-up.
+panel's workspace buttons change dtwm's internal state, not CoW's desks. The
+Workspace Manager work — making the switch live, serving the `DtWsm` protocol,
+and adding CDE's workspace/desktop/titlebar menus — is planned separately in
+[docs/WORKSPACE-MANAGER.md](docs/WORKSPACE-MANAGER.md).
 
 ### 5.3 Session startup
 

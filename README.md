@@ -38,6 +38,11 @@ clients — verified running nested inside a KWin session. CoW manages the CDE
 windows (decorations, stacking) while the Front Panel launches them. See
 [DESIGN.md §5.2 and §9](DESIGN.md#9-milestones).
 
+**Current work:** the CDE Workspace Manager — making the panel's workspace
+switch live, serving the `DtWsm` protocol to applications, and adding CDE's
+workspace/desktop/titlebar menus. Plan and protocol notes:
+[docs/WORKSPACE-MANAGER.md](docs/WORKSPACE-MANAGER.md).
+
 | M | Scope | State |
 |---|---|---|
 | M0 | repo + fetch + shim + CoW/River build | ✅ shim + Xt/Motif + CoW build (River: install distro package) |
