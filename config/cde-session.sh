@@ -32,8 +32,10 @@ fi
 # dtcm shows "rpc.cmsd is not responding".
 if command -v rpc.cmsd >/dev/null 2>&1; then
     log "starting the Calendar Manager service (rpc.cmsd)"
+    _cmsd_log="${XDG_RUNTIME_DIR:-/tmp}/cde-wayland/rpc-cmsd.log"
+    mkdir -p "$(dirname "$_cmsd_log")" 2>/dev/null || true
     CDE_CMSD_DIR="${CDE_CMSD_DIR:-$HOME/.calendar}" \
-        rpc.cmsd >/dev/null 2>&1 &
+        rpc.cmsd >"$_cmsd_log" 2>&1 &
 fi
 
 # The CDE Front Panel (real dtwm, contained).  dtwm skips its own ToolTalk

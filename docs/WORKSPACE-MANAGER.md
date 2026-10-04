@@ -229,6 +229,15 @@ dtwm-style icon box would need CoW to expose icons as a managed container.
   check in `RoamApp.C`; opening the inbox still returns `DTME_BadRunGroup`.
   Needs the setgid group at install time (root) or a non-spool mailbox; a
   separate packaging follow-up, not a WSM issue.
+* **Calendar Manager (fixed).** The session runs inside an unprivileged
+  user+network namespace, where `geteuid()` is 0 (map-root-user), so the
+  non-root path in `rpc.cmsd` never triggered and it fell back to the
+  root-owned `/var/spool/calendar`. `patches/rpccmsd-nonroot.patch` now keys off
+  `CDE_CMSD_DIR` (not `geteuid()`): it uses the private spool for
+  `init_calendar_dir`, the lock file and the log paths, and skips the daemon
+  setgid/seteuid/chown. `rpc.cmsd` stays up and dtcm (Calendar) opens its month
+  view. `cde-session.sh` logs the service to
+  `$XDG_RUNTIME_DIR/cde-wayland/rpc-cmsd.log`.
 * **ToolTalk in a namespace (fixed).** `ttsession` binds a privileged RPC port
   and registers over an abstract portmapper socket, so `run-session.sh` now
   prefers the unprivileged user+network namespace (+ `tt-portmapper`) whenever

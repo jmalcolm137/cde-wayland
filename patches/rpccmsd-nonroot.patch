@@ -1,15 +1,20 @@
 --- a/programs/dtcm/server/svcmain.c
 +++ b/programs/dtcm/server/svcmain.c
-@@ -211,10 +211,30 @@
+@@ -209,12 +209,34 @@
+ 	struct stat info;
+ 	mode_t mode;
  
- 	if (geteuid() != 0)
+-	if (geteuid() != 0)
++	/* cde-wayland: run as an ordinary user with a private spool directory
++	 * instead of the root-owned /var/spool/calendar.  CDE_CMSD_DIR forces
++	 * this even where geteuid() reports root, as it does in the session's
++	 * unprivileged user namespace (unshare --map-root-user). */
++	if (getenv("CDE_CMSD_DIR") != NULL || geteuid() != 0)
  	{
 -		fprintf (stderr,
 -			"%s: must be run in super-user mode!  Exited.\n",
 -			pgname);
 -		exit (-1);
-+		/* cde-wayland: run as an ordinary user with a private spool
-+		 * directory instead of the root-owned /var/spool/calendar. */
 +		char *over = getenv("CDE_CMSD_DIR");
 +
 +		if (!over || !*over)
@@ -35,10 +40,11 @@
  	}
  
  	create_dir = 0;
-@@ -316,9 +336,13 @@
+@@ -316,9 +338,14 @@
  lock_it(void)
  {
  	char *dir = _DtCMS_DEFAULT_DIR;
++	/* cde-wayland: the lock file lives in the private spool directory. */
 +	char *over = getenv("CDE_CMSD_DIR");
  	char	buff [MAXPATHLEN];
  	int	error;
@@ -49,6 +55,24 @@
  #ifdef SVR4
  	struct flock locker;
  	locker.l_type = F_WRLCK;
+@@ -740,6 +767,9 @@
+ #endif /* SunOS */
+ 
+ #ifndef AIX
++	/* cde-wayland: in private-spool mode there is no daemon uid/gid to
++	 * switch to; only a real root-run daemon drops privileges. */
++	if (getenv("CDE_CMSD_DIR") == NULL) {
+ #ifdef HPUX
+ 	setgid (daemon_gid);
+ 	setuid (daemon_uid);
+@@ -751,6 +781,7 @@
+ 	        perror(strerror(errno));
+ 	}
+ #endif /* HPUX */
++	}
+ #endif /* AIX */
+ 
+ 	init_time();
 --- a/programs/dtcm/server/log.c
 +++ b/programs/dtcm/server/log.c
 @@ -52,7 +52,21 @@
@@ -109,13 +133,13 @@
  	char	buff[BUFSIZ];
  
 -	if (changeeuid == B_TRUE) {
-+	/* cde-wayland: the default mode is rw for the file's group (the daemon
-+	 * group), which the ordinary user running us is not in.  As the owner we
-+	 * need write access ourselves. */
-+	if (geteuid() != 0)
++	/* cde-wayland: private-spool mode (CDE_CMSD_DIR) means an ordinary user
++	 * -- there is no daemon uid to switch to, and as the owner we need
++	 * write access to the file ourselves. */
++	if (getenv("CDE_CMSD_DIR") != NULL)
 +		mode |= S_IWUSR;
 +
-+	if (changeeuid == B_TRUE && geteuid() == 0) {
++	if (changeeuid == B_TRUE && getenv("CDE_CMSD_DIR") == NULL) {
  #ifndef AIX
  #ifdef HPUX
  		setuid (0);
@@ -132,7 +156,7 @@
 +		/* cde-wayland: as an ordinary user we cannot chown the calendar
 +		 * log to the daemon uid/gid; the file is already ours, so ignore
 +		 * it.  Only a root-run daemon treats this as fatal. */
-+		if (geteuid() == 0) {
++		if (getenv("CDE_CMSD_DIR") == NULL) {
 +			if (printerr == B_TRUE) {
 +				error = errno;
 +				sprintf (buff, "%s: chown %s to (uid=%ld,gid=%ld) failed.\n%s%s",
@@ -148,10 +172,10 @@
  #ifndef AIX
  #ifdef HPUX
 -	if (changeeuid == B_TRUE && setuid (daemon_uid) < 0)
-+	if (changeeuid == B_TRUE && geteuid() == 0 && setuid (daemon_uid) < 0)
++	if (changeeuid == B_TRUE && getenv("CDE_CMSD_DIR") == NULL && setuid (daemon_uid) < 0)
  #else
 -	if (changeeuid == B_TRUE && seteuid (daemon_uid) < 0)
-+	if (changeeuid == B_TRUE && geteuid() == 0 && seteuid (daemon_uid) < 0)
++	if (changeeuid == B_TRUE && getenv("CDE_CMSD_DIR") == NULL && seteuid (daemon_uid) < 0)
  #endif
  	{
  		if (printerr == B_TRUE) {
