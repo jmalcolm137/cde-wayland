@@ -165,4 +165,16 @@ for c in "$DTWM_DIR/sys.dtwmrc" "$DTWM_DIR/sys.dtwmrc.src"; do
     fi
 done
 
+# 5. Help volumes.  DTHELPSEARCHPATH is $CDE_ROOT/help/%L/%T/%N%S with
+#    %T == "volumes", so the SDL volumes live in help[/<locale>]/volumes/.
+#    Build them with scripts/build-help.sh (needs ksh + nsgmls).
+if ls "$CDE_BUILD/doc/help-sdl"/*.sdl >/dev/null 2>&1; then
+    mkdir -p "$CDE_ROOT/help/volumes" "$CDE_ROOT/help/C/volumes"
+    cp "$CDE_BUILD/doc/help-sdl"/*.sdl "$CDE_ROOT/help/volumes/"
+    cp "$CDE_BUILD/doc/help-sdl"/*.sdl "$CDE_ROOT/help/C/volumes/"
+    ok "installed $(ls "$CDE_ROOT/help/volumes" | wc -l) help volumes"
+else
+    warn "no help volumes built; run scripts/build-help.sh to install Help"
+fi
+
 ok "panel data installed"
