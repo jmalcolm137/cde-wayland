@@ -296,6 +296,20 @@ if [ -d "$CDE_BUILD/programs/backdrops" ]; then
     ok "installed Style Manager backdrops ($(ls "$HOME/.dt/backdrops" | wc -l) files)"
 fi
 
+# Colour palettes for the colour server.  At startup dtsession's
+# InitializeDtcolor() loads $CDE_ROOT/palettes/<palette>.dp; with no palettes
+# installed the load fails and the server immediately releases its
+# "Customize Data:" selection, so the Style Manager's Color module concludes the
+# colour server is not running.  The palettes are what the Color module lists
+# and edits.
+if ls "$CDE_BUILD/programs/palettes"/*.dp >/dev/null 2>&1; then
+    install -d "$CDE_ROOT/palettes"
+    cp -f "$CDE_BUILD/programs/palettes"/*.dp "$CDE_ROOT/palettes/"
+    ok "installed colour palettes ($(ls "$CDE_ROOT/palettes" | wc -l) files)"
+else
+    warn "no colour palettes in the build tree; the Color module will not work"
+fi
+
 # 5. Help volumes.  DTHELPSEARCHPATH is $CDE_ROOT/help/%L/%T/%N%S with
 #    %T == "volumes", so the SDL volumes live in help[/<locale>]/volumes/.
 #    Build them with scripts/build-help.sh (needs ksh + nsgmls).

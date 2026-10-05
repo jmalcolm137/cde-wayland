@@ -58,3 +58,11 @@ export CDE_MOTIF_HELPER="${CDE_MOTIF_HELPER-cde-motif-apply}"
 # XMODIFIERS is set for convention (clients built against a real Xlib consult
 # it when choosing an input method).
 export XMODIFIERS="${XMODIFIERS:-@im=ibus}"
+
+# Cross-process selections.  Each shim process is its own X server, so an X
+# selection owned by one client is invisible to the rest.  The shim's broker
+# (xlib-wayland src/xlib/broker.c) shares the named selections over a Unix
+# socket; the value is a comma-separated list of selection-name prefixes.  CDE's
+# colour server (dtsession) owns "Customize Data:<screen>", which dtstyle asks
+# for when opening the Style Manager's Color module.
+export XLIB_WAYLAND_SHARE_SELECTIONS="${XLIB_WAYLAND_SHARE_SELECTIONS-Customize Data:}"
