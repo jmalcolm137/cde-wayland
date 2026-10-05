@@ -310,6 +310,18 @@ else
     warn "no colour palettes in the build tree; the Color module will not work"
 fi
 
+# Session definition.  dtsession only publishes _DT_SM_STATE_INFO /
+# _DT_SM_SAVER_INFO when it takes its session-restore path, and it only does that
+# when $CDE_ROOT/config/<lang>/sys.session exists.  The Style Manager's Startup
+# module reads those (and dtstyle refuses the session manager, exiting, without
+# the state).  Install an empty one: dtsession then publishes its state and
+# starts no saved clients of its own -- cde-session.sh starts the Front Panel.
+if [ ! -e "$CDE_ROOT/config/C/sys.session" ]; then
+    install -d "$CDE_ROOT/config/C"
+    : > "$CDE_ROOT/config/C/sys.session"
+    ok "installed an empty sys.session (lets dtsession publish its state)"
+fi
+
 # 5. Help volumes.  DTHELPSEARCHPATH is $CDE_ROOT/help/%L/%T/%N%S with
 #    %T == "volumes", so the SDL volumes live in help[/<locale>]/volumes/.
 #    Build them with scripts/build-help.sh (needs ksh + nsgmls).
