@@ -46,3 +46,9 @@
 
 ! CDE window decorations that the shim maps to CoW/River window hints.
 *XmDialogShell.title:		CDE
+
+! The CDE session manager (dtsession) must not start a window manager of its
+! own: CoW is the window manager here, and the Front Panel (dtwm) is started
+! separately by cde-session.sh.  Without this dtsession forks a second dtwm,
+! which fights the contained panel over the Workspace Manager protocol.
+Dtsession*wmStartupCommand:	/bin/true

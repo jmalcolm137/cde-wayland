@@ -38,6 +38,22 @@ if command -v rpc.cmsd >/dev/null 2>&1; then
         rpc.cmsd >"$_cmsd_log" 2>&1 &
 fi
 
+# The CDE session manager (real dtsession).  It provides the session protocol
+# (the ToolTalk SM ops and the _DT_SM_* window/properties that Style Manager's
+# Startup panel looks for) and, via InitializeDtcolor(), the Dtcolor colour
+# server that the Style Manager's Color module talks to.  CoW is the window
+# manager, so wmStartupCommand is pointed at /bin/true: dtsession must not start
+# a WM (and, since there is no saved session, it starts nothing else).  Started
+# before the Front Panel so the panel can see the manager.
+if command -v dtsession >/dev/null 2>&1; then
+    log "starting the CDE session manager (dtsession)"
+    _ds_log="${XDG_RUNTIME_DIR:-/tmp}/cde-wayland/dtsession.log"
+    mkdir -p "$(dirname "$_ds_log")" 2>/dev/null || true
+    dtsession -xrm 'Dtsession*wmStartupCommand: /bin/true' >"$_ds_log" 2>&1 &
+else
+    log "warning: dtsession not found; the Startup/Color modules will be limited"
+fi
+
 # The CDE Front Panel (real dtwm, contained).  dtwm skips its own ToolTalk
 # messaging: registering as the workspace/window manager is wrong here (CoW is
 # the WM) and it stopped the Front Panel from being created.
