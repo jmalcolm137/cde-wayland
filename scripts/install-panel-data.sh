@@ -195,17 +195,23 @@ if ls "$TYPES_DIR"/*.dt >/dev/null 2>&1; then
         # are "not found".
         cp "$CDE_ROOT/appconfig/types/C/$b" "$CDE_ROOT/appconfig/types/$b"
     done
-    # LockDisplay is a ToolTalk request to dtsession (Display_Lock), which we do
-    # not run.  Rewrite the action in the installed databases to start the
-    # Wayland screen locker instead (River provides ext_session_lock_manager_v1,
-    # which waylock uses).  A user-database override alone did not win for this
-    # action.
+    # The Front Panel's Lock and Exit controls are ToolTalk requests to the
+    # session manager (Display_Lock / XSession_Exit).  dtsession runs, but its
+    # in-process lock just covers its own private X server and its logout flow
+    # assumes it owns the whole session; neither works under the shim's
+    # per-client displays.  Rewrite both actions in the installed databases to
+    # run the Wayland screen locker (River's ext_session_lock_manager_v1, used
+    # by waylock) and our session teardown directly.
     python3 - "$CDE_ROOT" <<'PY'
 import os, re, sys
 root = sys.argv[1]
-new = ("ACTION LockDisplay\n{\n    LABEL Lock\n    TYPE COMMAND\n"
-       "    WINDOW_TYPE NO_STDIO\n    EXEC_STRING /bin/sh -c 'exec waylock'\n}\n")
-pat = re.compile(r'ACTION\s+LockDisplay\s*\{[^{}]*\}')
+replacements = {
+    'LockDisplay': ("ACTION LockDisplay\n{\n    LABEL Lock\n    TYPE COMMAND\n"
+                    "    WINDOW_TYPE NO_STDIO\n    EXEC_STRING /bin/sh -c 'exec waylock'\n}\n"),
+    'ExitSession': ("ACTION ExitSession\n{\n    LABEL ExitSession\n    TYPE COMMAND\n"
+                    "    WINDOW_TYPE NO_STDIO\n    EXEC_STRING /bin/sh -c 'exec cde-logout'\n}\n"),
+}
+pats = {a: re.compile(r'ACTION\s+%s\s*\{[^{}]*\}' % re.escape(a)) for a in replacements}
 count = 0
 for dirpath, _, files in os.walk(os.path.join(root, 'appconfig', 'types')):
     for fn in files:
@@ -213,13 +219,14 @@ for dirpath, _, files in os.walk(os.path.join(root, 'appconfig', 'types')):
             continue
         p = os.path.join(dirpath, fn)
         s = open(p).read()
-        if 'LockDisplay' not in s:
-            continue
-        s2 = pat.sub(new, s)
+        s2 = s
+        for a, repl in replacements.items():
+            if a in s2:
+                s2 = pats[a].sub(repl, s2)
         if s2 != s:
             open(p, 'w').write(s2)
             count += 1
-print("      rewrote LockDisplay in %d database file(s)" % count)
+print("      rewrote panel actions in %d database file(s)" % count)
 PY
     ok "installed $(ls "$TYPES_DIR"/*.dt | wc -l) action/datatype databases"
 else
