@@ -1,0 +1,63 @@
+dtsession: use _exit() instead of exit() in vfork() children
+
+dtsession launches helper processes with vfork().  POSIX requires a vfork()
+child to call only exec*() or _exit(); dtsession instead called SM_EXIT(-1)
+(-> SmExit() -> exit()) when an exec fails.  That runs all atexit handlers and
+shared-library destructors in the *parent's* address space, which vfork shares
+until exec.  In particular libpixman's destructor (pixman_destructor) frees the
+whole pixman implementation chain, leaving pixman's global_implementation
+pointer dangling.  The parent then reuses those freed blocks (e.g. libxkbcommon
+keymap data) and crashes on the next cairo/pixman draw (observed as a wild call
+in pixman_blt from _XmGetScaledPixmap during XmScreen creation).
+
+Replace exit() with _exit() in every vfork() child failure path.
+
+--- a/programs/dtsession/SmGlobals.c
++++ b/programs/dtsession/SmGlobals.c
+@@ -1408,7 +1408,7 @@
+             tmpString = ((char *)GETMESSAGE(4, 4, "Unable to remove session directory.  Make sure write permissions exist on $HOME/.dt directory.  Invalid session files will not be removed.")) ;
+             PrintErrnoError(DtError, tmpString);
+             SM_FREE(tmpString);
+-            SM_EXIT(-1);
++            _exit(-1);
+         }
+     }
+ 
+@@ -1513,7 +1513,7 @@
+             tmpString = ((char *)GETMESSAGE(4, 4, "Unable to remove session directory.  Make sure write permissions exist on $HOME/.dt directory.  Invalid session files will not be removed.")) ;
+             PrintErrnoError(DtError, tmpString);
+             SM_FREE(tmpString);
+-            SM_EXIT(-1);
++            _exit(-1);
+         }
+     }
+ 
+--- a/programs/dtsession/SmRestore.c
++++ b/programs/dtsession/SmRestore.c
+@@ -919,7 +919,7 @@
+ 	    snprintf(clientMessage, (MAXPATHLEN + 256) - 1,
+                      ((char *)GETMESSAGE(16, 1, "Unable to exec process %s.  No session resources will be restored.")), pgrm);
+ 	    PrintErrnoError(DtError, clientMessage);
+-	    SM_EXIT(-1);
++	    _exit(-1);
+ 	}
+     }
+ 
+@@ -3638,7 +3638,7 @@
+ 	{
+ 	    sprintf(clientMessage, ((char *)GETMESSAGE(16, 3, "Unable to exec %s.")), execArray[0]);
+ 	    PrintErrnoError(DtError, clientMessage);
+-	    SM_EXIT(-1);
++	    _exit(-1);
+ 	}
+     }
+ 
+@@ -3887,7 +3887,7 @@
+ 	if(execStatus != 0 && (!localWmLaunched))
+ 	{
+ 	    PrintErrnoError(DtError, GETMESSAGE(16, 4, "Unable to exec process /usr/dt/bin/dtwm.  No window manager will be started."));
+-	    SM_EXIT(-1);
++	    _exit(-1);
+ 	}
+     }
+ }

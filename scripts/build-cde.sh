@@ -250,7 +250,7 @@ stage_install() {
     # The Front Panel launches these by name from PATH, so they must land in
     # $CDE_ROOT/bin.
     local p
-    for p in dtcalc dtpad dthello dtstyle dtcm dtterm dtfile dthelp dtprintinfo; do
+    for p in dtcalc dtpad dthello dtstyle dtcm dtterm dtfile dthelp dtprintinfo dtsession; do
         [ -d "$CDE_BUILD/programs/$p" ] || continue
         ( cd "$CDE_BUILD/programs/$p" && make "${MAKE_OVERRIDES[@]}" install ) \
             || warn "programs/$p install failed"
