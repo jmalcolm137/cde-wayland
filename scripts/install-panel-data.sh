@@ -61,7 +61,7 @@ if [ -f "$PROJECT_ROOT/tools/cde-wsm.c" ]; then
 fi
 
 # Root-menu helpers: "Restart Workspace Manager..." and "Log out...".
-for h in cde-restart-dtwm.sh cde-logout.sh cde-toggle-frontpanel.sh cde-wsm-backdrop.sh cde-motif-apply.sh; do
+for h in cde-restart-dtwm.sh cde-logout.sh cde-toggle-frontpanel.sh cde-wsm-backdrop.sh cde-motif-apply.sh cde-session-save.sh cde-session-restore.sh; do
     [ -f "$PROJECT_ROOT/scripts/$h" ] || continue
     install -D -m 0755 "$PROJECT_ROOT/scripts/$h" \
         "$CDE_ROOT/bin/$(basename "$h" .sh)"

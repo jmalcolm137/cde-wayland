@@ -9,6 +9,12 @@
 # then the window manager, compositor and ToolTalk session.
 set -u
 
+# Record what is running before tearing the session down, so the next start can
+# bring it back (cde-session.sh runs cde-session-restore.sh).
+if command -v cde-session-save.sh >/dev/null 2>&1; then
+    cde-session-save.sh >/dev/null 2>&1 || true
+fi
+
 pkill -x dtsession 2>/dev/null
 pkill -x dtwm      2>/dev/null
 pkill -x rpc.cmsd  2>/dev/null

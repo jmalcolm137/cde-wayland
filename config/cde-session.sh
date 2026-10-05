@@ -71,6 +71,13 @@ else
     log "error: dtwm not found; run scripts/install-panel-data.sh"
 fi
 
+# Bring back the applications from the last session (recorded by
+# cde-session-save.sh at logout; see config/cde-env.sh).  CDE_RESTORE=0 starts
+# clean instead.
+if [ "${CDE_RESTORE:-1}" = 1 ] && command -v cde-session-restore.sh >/dev/null 2>&1; then
+    cde-session-restore.sh &
+fi
+
 # Optional startup hook: a command run once, in the background, after the panel
 # is up and the ToolTalk session is available.  scripts/test-nested.sh points
 # this at scripts/wsm-smoke.sh to exercise the Workspace Manager.

@@ -54,6 +54,17 @@ module registers with River as an `input-method-v2` server), so CDE's Motif text
 widgets compose accented Latin and CJK text. Set `CDE_IME=0` to skip starting
 the input method.
 
+**Session save/restore** is done on the Wayland/Linux side: there is no shared X
+server, so XSMP cannot see the other clients. Every application launched by the
+session inherits `CDE_SESSION_TAG`/`CDE_SESSION_DIR` (see `config/cde-env.sh`),
+so the running clients are the processes carrying that marker;
+`scripts/cde-session-save.sh` records their command line and working directory
+at logout and `config/cde-session.sh` replays them on the next start
+(`scripts/cde-session-restore.sh`). The data lives under
+`$XDG_STATE_HOME/cde-wayland/sessions/<type>` (`current` or `home`), not
+`~/.dt/sessions`, which dtsession recreates from its own XSMP data. Set
+`CDE_RESTORE=0` to start clean.
+
 | M | Scope | State |
 |---|---|---|
 | M0 | repo + fetch + shim + CoW/River build | ✅ shim + Xt/Motif + CoW build (River: install distro package) |

@@ -81,3 +81,13 @@ export XLIB_WAYLAND_SHARE_PROPERTIES="${XLIB_WAYLAND_SHARE_PROPERTIES-_DT_SM_}"
 # without needing an input method.  Set CDE_XKB_VARIANT= for a plain layout.
 export XKB_DEFAULT_LAYOUT="${XKB_DEFAULT_LAYOUT:-us}"
 export XKB_DEFAULT_VARIANT="${CDE_XKB_VARIANT-intl}"
+
+# Session save/restore.  There is no shared X server, so XSMP cannot see the
+# other clients; the session is instead captured on the Wayland/Linux side, from
+# the processes that carry these markers (see scripts/cde-session-save.sh).
+# Every application launched by the session inherits them.
+export CDE_SESSION_TYPE="${CDE_SESSION_TYPE:-current}"
+export CDE_SESSION_TAG="${CDE_SESSION_TAG:-cde-wayland-session}"
+# Kept out of ~/.dt/sessions: that directory belongs to dtsession, which
+# recreates it from its own (XSMP) session data on every start.
+export CDE_SESSION_DIR="${CDE_SESSION_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/cde-wayland/sessions/$CDE_SESSION_TYPE}"
