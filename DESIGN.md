@@ -96,7 +96,7 @@ Any CDE feature that relies on a *different process* observing X server state:
 | CDE feature | Mechanism | Status under the shim |
 |---|---|---|
 | `Xm`/X inter-client clipboard | CLIPBOARD selection | works via `wl_data_device` (text) |
-| Motif drag-and-drop between apps | `_MOTIF_DRAG_*` X properties + selections | **bridged**: a Wayland drag dropped on a CDE window is delivered to its Motif drop site (receiving side; sending side pending) |
+| Motif drag-and-drop between apps | `_MOTIF_DRAG_*` X properties + selections | **bridged**: the compositor routes the drag and the broker relays the icc handle selection, so a CDE drag reaches another app's drop site and a Wayland drag reaches a CDE one |
 | `dtsession` session management | XSMP over ICE, plus `_DT_SM_*` root properties | **needs a session layer** |
 | Workspace/front-panel coordination | `_DT_WORKSPACE_*`, `_MOTIF_WM_*` root props | becomes CoW's job |
 | X resources for all apps | `RESOURCE_MANAGER` root property | per-process; each reads files directly |
@@ -436,7 +436,7 @@ relocatable and needs no root.
 | **M3** | Core desktop apps | `dtterm`, `dtfile`, `dtstyle`, `dtcm`, `dthelp` run; menus and text input work |
 | **M4** | Real session under River+CoW | apps launch in a River/CoW session with CoW decorations and a CDE-ish theme |
 | **M5** | Desktop integration | CoW panel/launcher with CDE entries; backdrops; icon handling; X resources propagated |
-| **M6** | Cross-process features via broker | clipboard (have text), Motif DnD (receiving works; sending pending), XSMP session restore |
+| **M6** | Cross-process features via broker | clipboard (have text), Motif DnD (both directions bridged), XSMP session restore |
 | **M7** | Polish/hardening | idle/screensaver, multiscreen via Xinerama mapping, soak/ASan |
 
 ---

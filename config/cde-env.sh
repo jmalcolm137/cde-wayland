@@ -64,8 +64,12 @@ export XMODIFIERS="${XMODIFIERS:-@im=ibus}"
 # (xlib-wayland src/xlib/broker.c) shares the named selections over a Unix
 # socket; the value is a comma-separated list of selection-name prefixes.  CDE's
 # colour server (dtsession) owns "Customize Data:<screen>", which dtstyle asks
-# for when opening the Style Manager's Color module.
-export XLIB_WAYLAND_SHARE_SELECTIONS="${XLIB_WAYLAND_SHARE_SELECTIONS-Customize Data:}"
+# for when opening the Style Manager's Color module.  Motif drag-and-drop
+# carries its payload on a selection named _MOTIF_ATOM_n, so those are shared
+# too: the drag itself is routed by the compositor, but the file/text transfer
+# is an ordinary selection conversion between the two Motifs (see
+# xlib-wayland src/xlib/dnd.c).
+export XLIB_WAYLAND_SHARE_SELECTIONS="${XLIB_WAYLAND_SHARE_SELECTIONS-Customize Data:,_MOTIF_ATOM_}"
 
 # Session-manager properties.  dtsession publishes _DT_SM_WINDOW_INFO on the
 # root and _DT_SM_STATE_INFO / _DT_SM_SAVER_INFO on its window; dtstyle's Style
