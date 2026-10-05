@@ -255,6 +255,15 @@ stage_install() {
         ( cd "$CDE_BUILD/programs/$p" && make "${MAKE_OVERRIDES[@]}" install ) \
             || warn "programs/$p install failed"
     done
+    # dtsession execs this helper (CDE_INSTALLATION_TOP/bin/dtsession_res) to
+    # (re)load the desktop RESOURCE_MANAGER at session start.  dtsession's own
+    # Makefile builds it (dtloadresources) but has no install rule for it, and
+    # without it the vfork() child's exec fails.
+    if [ -f "$CDE_BUILD/programs/dtsession/dtloadresources" ]; then
+        install -m 0755 "$CDE_BUILD/programs/dtsession/dtloadresources" \
+            "$CDE_ROOT/bin/dtsession_res"
+        ok "installed dtsession_res"
+    fi
     ok "install attempted"
 }
 
