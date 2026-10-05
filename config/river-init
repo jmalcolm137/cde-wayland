@@ -20,4 +20,18 @@ fi
 : "${XDG_CURRENT_DESKTOP:=CDE}"
 export XDG_CURRENT_DESKTOP
 
+# Input method.  CDE's Motif text widgets (and GTK2 apps) reach the compositor's
+# text-input protocol through the shim's XIM bridge, so an input method must be
+# running to compose anything beyond the keyboard layout.  ibus's Wayland module
+# registers with River as an input-method-v2 server.  It needs a session D-Bus;
+# if none is reachable it fails quietly and plain typing still works.  Set
+# CDE_IME=0 to skip it.
+if [ "${CDE_IME:-1}" = 1 ] && command -v ibus-daemon >/dev/null 2>&1; then
+    if [ -z "${DBUS_SESSION_BUS_ADDRESS:-}" ] &&
+        command -v dbus-launch >/dev/null 2>&1; then
+        eval "$(dbus-launch --sh-syntax)"
+    fi
+    ibus-daemon -dr --panel=disable >/dev/null 2>&1 || true
+fi
+
 cow-start

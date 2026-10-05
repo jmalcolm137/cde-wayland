@@ -5,10 +5,12 @@
 # made in THIS repository, not here; we only consume it.
 XLIB_WAYLAND_REPO=https://github.com/jmalcolm137/xlib-wayland.git
 XLIB_WAYLAND_REF=main
-# Tested at c97fcc2.  Requires at least:
+# Tested at cec9604.  Requires at least:
 #   b9a3142  XOpenDisplay reports an X display string (DtSvc parses it)
 #   a8c2a3e  Xmb/XwcTextExtents fill ink and logical independently
 #            (DtTerm's fontset path passes ink=NULL and crashed without this)
+#   cec9604  XIM is a real bridge to the compositor's zwp_text_input_v3
+#            (input methods compose; River + ibus)
 # See DESIGN.md §7.5.
 
 # CDE (imake tree) — default branch `master`.

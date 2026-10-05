@@ -48,6 +48,12 @@ module sets the CoW desktop background per workspace, and its Keyboard module's
 Auto Repeat toggle is shared with every client (the shim gates the key repeat it
 synthesises on it).
 
+Input methods work too: the shim's XIM is a real bridge to the compositor's
+`zwp_text_input_v3`, and `config/river-init` starts `ibus` (whose `ibus-wayland`
+module registers with River as an `input-method-v2` server), so CDE's Motif text
+widgets compose accented Latin and CJK text. Set `CDE_IME=0` to skip starting
+the input method.
+
 | M | Scope | State |
 |---|---|---|
 | M0 | repo + fetch + shim + CoW/River build | ✅ shim + Xt/Motif + CoW build (River: install distro package) |

@@ -51,3 +51,10 @@ fi
 # disabled button; it retries until CoW knows the window.  Set it explicitly
 # empty to disable the relay.
 export CDE_MOTIF_HELPER="${CDE_MOTIF_HELPER-cde-motif-apply}"
+
+# Input methods.  The shim's XIM is a bridge to the compositor's text-input
+# protocol, so no separate XIM server name is needed; river-init starts ibus,
+# whose Wayland module registers with River as an input-method-v2 server.
+# XMODIFIERS is set for convention (clients built against a real Xlib consult
+# it when choosing an input method).
+export XMODIFIERS="${XMODIFIERS:-@im=ibus}"
