@@ -31,7 +31,34 @@ if [ "${CDE_IME:-1}" = 1 ] && command -v ibus-daemon >/dev/null 2>&1; then
         command -v dbus-launch >/dev/null 2>&1; then
         eval "$(dbus-launch --sh-syntax)"
     fi
+
+    # ibus writes its discovery file under $XDG_CONFIG_HOME, which this session
+    # redirects (so the shim can find its own resource file).  Remove any stale
+    # file first, start the daemon, then read the address it wrote: a client
+    # looks in the standard ~/.config/ibus/bus, so without this the daemon is
+    # invisible and neither ibus-wayland nor any X client can reach it.
+    mkdir -p "${XDG_CONFIG_HOME:-$HOME/.config}/ibus/bus"
+    rm -f "${XDG_CONFIG_HOME:-$HOME/.config}"/ibus/bus/* 2>/dev/null || true
     ibus-daemon -dr --panel=disable >/dev/null 2>&1 || true
+
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+        IBUS_ADDRESS=$(grep -h '^IBUS_ADDRESS=' \
+            "${XDG_CONFIG_HOME:-$HOME/.config}"/ibus/bus/* \
+            "$HOME/.config/ibus/bus/"* 2>/dev/null | tail -1 | cut -d= -f2-)
+        [ -n "${IBUS_ADDRESS:-}" ] && break
+        sleep 0.2
+    done
+    export IBUS_ADDRESS
+
+    # The Wayland input-method client is what registers ibus with the
+    # compositor (zwp_input_method_manager_v2); ibus-daemon does not start it.
+    # Without it the compositor has no input method, so text-input-v3 never
+    # activates and the shim's XIM bridge never sees preedit or commit.
+    if command -v ibus-wayland >/dev/null 2>&1; then
+        ibus-wayland >/dev/null 2>&1 &
+    elif [ -x /usr/lib/ibus/ibus-wayland ]; then
+        /usr/lib/ibus/ibus-wayland >/dev/null 2>&1 &
+    fi
 fi
 
 cow-start
