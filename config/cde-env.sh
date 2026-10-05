@@ -73,3 +73,11 @@ export XLIB_WAYLAND_SHARE_SELECTIONS="${XLIB_WAYLAND_SHARE_SELECTIONS-Customize 
 # shim process has its own root, so the shim republishes the named properties
 # (xlib-wayland src/xlib/smprops.c).
 export XLIB_WAYLAND_SHARE_PROPERTIES="${XLIB_WAYLAND_SHARE_PROPERTIES-_DT_SM_}"
+
+# Keyboard layout.  Applications take their X keymap from the compositor; when
+# it has no physical keyboard (the nested test session) the shim builds one from
+# XKB_DEFAULT_*, and River uses the same names for its seat.  The "intl" variant
+# adds the dead keys the shim now composes itself (dead_acute then e -> é),
+# without needing an input method.  Set CDE_XKB_VARIANT= for a plain layout.
+export XKB_DEFAULT_LAYOUT="${XKB_DEFAULT_LAYOUT:-us}"
+export XKB_DEFAULT_VARIANT="${CDE_XKB_VARIANT-intl}"
