@@ -66,3 +66,10 @@ export XMODIFIERS="${XMODIFIERS:-@im=ibus}"
 # colour server (dtsession) owns "Customize Data:<screen>", which dtstyle asks
 # for when opening the Style Manager's Color module.
 export XLIB_WAYLAND_SHARE_SELECTIONS="${XLIB_WAYLAND_SHARE_SELECTIONS-Customize Data:}"
+
+# Session-manager properties.  dtsession publishes _DT_SM_WINDOW_INFO on the
+# root and _DT_SM_STATE_INFO / _DT_SM_SAVER_INFO on its window; dtstyle's Style
+# Manager reads them (and warns about screen-saver settings without them).  Each
+# shim process has its own root, so the shim republishes the named properties
+# (xlib-wayland src/xlib/smprops.c).
+export XLIB_WAYLAND_SHARE_PROPERTIES="${XLIB_WAYLAND_SHARE_PROPERTIES-_DT_SM_}"
