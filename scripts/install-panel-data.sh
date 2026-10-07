@@ -237,12 +237,46 @@ fi
 #     from /etc/tt/types.xdr or $HOME/.tt/types.xdr; without them every CDE
 #     ptype (DtFile, DtMail, ...) is unknown and clients fail with
 #     TT_ERR_PTYPE ("not the name of a process type").
-if [ -s "$CDE_BUILD/programs/tttypes/types.xdr" ]; then
+#
+#     The ptypes are compiled straight into the user database.  The build
+#     tree's programs/tttypes/types.xdr is only a side effect of the
+#     .ptype.done rules (it is not a make target), so it is routinely absent or
+#     holds only the last type compiled; copying it loses types silently.
+#     tt_type_comp run with TTPATH unset writes $HOME/.tt/types.xdr directly.
+_ttc=""
+for _cand in "$CDE_ROOT/bin/tt_type_comp" \
+             "$CDE_BUILD/lib/tt/bin/tt_type_comp/tt_type_comp"; do
+    [ -x "$_cand" ] && { _ttc="$_cand"; break; }
+done
+_tt_n=0
+if [ -n "$_ttc" ] && ls "$CDE_BUILD"/programs/tttypes/*.ptype >/dev/null 2>&1; then
+    mkdir -p "$HOME/.tt" "$CDE_ROOT/infolib/etc"
+    for _pt in "$CDE_BUILD"/programs/tttypes/*.ptype; do
+        # Compile from a scratch directory: with TTPATH unset the compiler
+        # targets the user database, not a ./types.xdr build artefact.
+        if ( cd /tmp && env -u TTPATH "$_ttc" -s -d user -m "$_pt" ) >/dev/null 2>&1; then
+            _tt_n=$((_tt_n + 1))
+        elif command -v cpp >/dev/null 2>&1; then
+            # Some ptypes (dtinfo*) need cpp preprocessing, and their start
+            # paths point at the classic /usr/dt which we relocate.
+            _pre="$CDE_ROOT/infolib/etc/$(basename "$_pt")"
+            cpp -I"$CDE_BUILD/programs/tttypes" "$_pt" 2>/dev/null \
+                | sed "s|/usr/dt|$CDE_ROOT|g" > "$_pre"
+            ( cd /tmp && env -u TTPATH "$_ttc" -s -d user -m "$_pre" ) \
+                >/dev/null 2>&1 && _tt_n=$((_tt_n + 1))
+        fi
+    done
+    if [ "$_tt_n" -gt 0 ]; then
+        ok "registered $_tt_n ToolTalk process types (~/.tt/types.xdr)"
+    else
+        warn "could not register any ToolTalk process types"
+    fi
+elif [ -s "$CDE_BUILD/programs/tttypes/types.xdr" ]; then
     install -D -m 0644 "$CDE_BUILD/programs/tttypes/types.xdr" \
         "$HOME/.tt/types.xdr"
-    ok "installed ToolTalk process types (~/.tt/types.xdr)"
+    ok "installed prebuilt ToolTalk process types (~/.tt/types.xdr)"
 else
-    warn "types.xdr not built; ToolTalk apps may report unknown process types"
+    warn "no tt_type_comp and no types.xdr; ToolTalk apps may report unknown ptypes"
 fi
 
 # 3. Icons.  The default XMICONSEARCHPATH built by _DtEnvControl() expands to
@@ -372,18 +406,9 @@ if [ -x "$CDE_BUILD/programs/dtinfo/dtinfo/src/dtinfo" ]; then
         install -D -m 0644 "$dt" "$HOME/.dt/types/$(basename "$dt")"
     done
     ok "installed action overlays into ~/.dt/types"
-    # dtinfo declares the DtInfo process type; the base types.xdr has no DtInfo
-    # entry, and its start path is the classic /usr/dt.  Merge a copy with the
-    # path rewritten to this prefix into the user database.
-    _ttc="$CDE_ROOT/bin/tt_type_comp"
-    _ptype="$CDE_BUILD/programs/tttypes/dtinfo.ptype"
-    if [ -x "$_ttc" ] && [ -f "$_ptype" ]; then
-        cpp -I"$CDE_BUILD/programs/tttypes" "$_ptype" 2>/dev/null \
-            | sed "s|/usr/dt|$CDE_ROOT|g" > "$CDE_ROOT/infolib/etc/dtinfo.ptype"
-        "$_ttc" -sd user -m "$CDE_ROOT/infolib/etc/dtinfo.ptype" >/dev/null 2>&1 \
-            && ok "installed the DtInfo process type" \
-            || warn "could not install the DtInfo process type"
-    fi
+    # dtinfo's DtInfo process type is registered by step 2d above (its .ptype
+    # needs cpp preprocessing and the /usr/dt prefix rewritten, which that loop
+    # handles).  Nothing further to do here.
 else
     warn "dtinfo not built; the InfoManager button will do nothing"
 fi
