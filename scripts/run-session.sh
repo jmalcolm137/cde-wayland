@@ -98,9 +98,23 @@ install -D -m 0644 "$PROJECT_ROOT/config/Xresources" \
     "$conf_home/xlib-wayland/Xresources"
 
 export XDG_CONFIG_HOME="$conf_home"
+
+# In nested mode River is a client of the outer compositor, but the session's
+# own clients - and the ToolTalk daemon below, which auto-starts ptype
+# processes such as `dtpad -server` - must talk to *River*, not to the outer
+# compositor.  It is the same environment variable, so remember the outer
+# display, point the session tree at the socket River will create, and hand
+# River the outer one.
+RIVER_DISPLAY=""	# the display River itself connects to (empty: DRM backend)
 if [ "$NESTED" = 1 ]; then
     log "nested mode: River on the wlroots Wayland backend"
     export WLR_BACKENDS=wayland WLR_LIBINPUT_NO_DEVICES=1
+    RIVER_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"
+    _rt="${XDG_RUNTIME_DIR:-/tmp}"
+    _n=0
+    while [ -e "$_rt/wayland-$_n" ]; do _n=$((_n + 1)); done
+    export WAYLAND_DISPLAY="wayland-$_n"
+    log "session display: $WAYLAND_DISPLAY (River connects to $RIVER_DISPLAY)"
 fi
 
 # Our clients never connect to Xwayland: the shim ignores DISPLAY and speaks
@@ -116,7 +130,13 @@ fi
 command -v ttsession >/dev/null 2>&1 || \
     die "ttsession not found; run scripts/install-panel-data.sh"
 
-TT_ARGS=( -a unix -c river )
+if [ -n "$RIVER_DISPLAY" ]; then
+    # River reaches the outer compositor; ttsession itself (and everything it
+    # auto-starts) keeps $WAYLAND_DISPLAY, which is River's socket.
+    TT_ARGS=( -a unix -c env "WAYLAND_DISPLAY=$RIVER_DISPLAY" river )
+else
+    TT_ARGS=( -a unix -c river )
+fi
 if [ "${CDE_SESSION_NS:-0}" = 1 ]; then
     TT_ARGS+=( -no-xwayland )
 fi

@@ -11,28 +11,29 @@
  #include <limits.h>
  
  #include <X11/Intrinsic.h>
-@@ -76,6 +80,10 @@
- #include <Dt/Service.h>
- #include <Dt/UserMsg.h>
+@@ -100,6 +104,10 @@
+ #include "myassertP.h"
+ #include "DtSvcLock.h"
  
 +/* cde-wayland: defined near NoToolTalkConnectionError below.  Lets
-+ * DtActionInvoke() bypass ToolTalk entirely when CDE_NO_TOOLTALK is set. */
-+static int _DtLocalActionRun(const char *name);
++ * DtActionInvoke() resolve and run an action locally. */
++static int _DtLocalActionRun(const char *name, int argc, DtActionArg *aap);
 +
- #include <Xm/Xm.h>
- #include <Xm/BulletinB.h>
- #include <Xm/DialogS.h>
-@@ -519,6 +527,18 @@
+ #ifndef CDE_INSTALLATION_TOP
+ #define CDE_INSTALLATION_TOP "/opt/dt"
+ #endif
+@@ -519,6 +527,19 @@
        w = XtParent(w);
      
      _DtSvcProcessLock();
 +
-+    /* cde-wayland: prefer running a Front-Panel action locally.  The panel's
-+     * buttons have no arguments, so resolve the action against the .dt
-+     * databases / built-in table and run its command directly.  This is what
-+     * lets the panel (and an app's "Open Terminal" menu) work; actions with no
-+     * local command fall through to the normal ToolTalk path below. */
-+    if ((aap == NULL || aac == 0) && _DtLocalActionRun(action))
++    /* cde-wayland: prefer running the action locally.  The Front Panel's
++     * buttons have no arguments; a File Manager double-click ("Open", file) or
++     * a file dropped on a panel control has one.  Resolve the action against
++     * the .dt databases / built-in table and run its command directly; actions
++     * with no local command (ToolTalk messages, XSMP, ...) fall through to the
++     * normal path below. */
++    if (_DtLocalActionRun(action, aac, aap))
 +    {
 +        _DtSvcProcessUnlock();
 +        return 0;
@@ -41,7 +42,7 @@
      if ( !initialized )
      {
        mode_t mode;
-@@ -1139,6 +1159,205 @@
+@@ -1139,6 +1160,392 @@
   * one, then we will fail and post an error dialog.
   */
  
@@ -84,11 +85,113 @@
 +    }
 +}
 +
++/* Match a block against the requested argument count.  CDE ranks an explicit
++ * ARG_COUNT over an absent (wildcard) one, and a wildcard block accepts any
++ * number of arguments. */
 +static int
-+_DtLocalActionFind(const char *name, int want_argc, int strict,
++_dtl_argc_ok(int argcnt, int want)
++{
++    if (argcnt == want) return 1;
++    if (want > 0 && argcnt < 0) return 1;
++    return 0;
++}
++
++/* Shell-quote one argument. */
++static void
++_dtl_quote(const char *in, char *out, size_t outsz)
++{
++    size_t o = 0;
++    if (o + 1 < outsz) out[o++] = '\'';
++    for (; in && *in && o + 8 < outsz; in++) {
++        if (*in == '\'') { memcpy(out + o, "'\\''", 4); o += 4; }
++        else out[o++] = *in;
++    }
++    if (o + 1 < outsz) out[o++] = '\'';
++    out[o] = '\0';
++}
++
++/* Expand the argument references in a CDE command line.  Handles both the
++ * %Arg_n% / %Args% keywords and the .dt form %(class)Arg_n, including an
++ * optional following "default" and the trailing % of the %(...)...% spelling. */
++static void
++_dtl_expand(const char *in, int argc, char **argv, char *out, size_t outsz)
++{
++    size_t o = 0;
++    const char *p = in;
++    while (*p && o + 1 < outsz) {
++        if (p[0] == '%' && p[1] == '(') {
++            const char *cl = strchr(p, ')');
++            if (cl && strncmp(cl + 1, "Arg_", 4) == 0) {
++                int n = atoi(cl + 5) - 1;
++                p = cl + 5;
++                /* Consume the rest of this token: an optional "default" and
++                 * the trailing % of the %(...)...% spelling. */
++                while (*p && *p != ' ' && *p != '\t') {
++                    if (*p == '%') { p++; break; }
++                    p++;
++                }
++                if (*p == '"') p++;   /* trailing quote of the .dt spelling */
++                if (o > 0 && out[o - 1] == '"') o--;   /* drop the opening quote */
++                if (n >= 0 && n < argc && argv[n]) {
++                    char q[4096];
++                    _dtl_quote(argv[n], q, sizeof q);
++                    const char *x = q; while (*x && o + 1 < outsz) out[o++] = *x++;
++                }
++                continue;
++            }
++        }
++        if (strncmp(p, "%Arg_", 5) == 0) {
++            int n = atoi(p + 5) - 1;
++            const char *e = strchr(p + 5, '%');
++            if (n >= 0 && n < argc && argv[n]) {
++                char q[4096];
++                _dtl_quote(argv[n], q, sizeof q);
++                const char *x = q; while (*x && o + 1 < outsz) out[o++] = *x++;
++            }
++            p = e ? e + 1 : p + 5;
++            continue;
++        }
++        if (strncmp(p, "%Args%", 6) == 0) {
++            int i;
++            for (i = 0; i < argc; i++) {
++                if (!argv[i]) continue;
++                if (i && o + 1 < outsz) out[o++] = ' ';
++                char q[4096];
++                _dtl_quote(argv[i], q, sizeof q);
++                const char *x = q; while (*x && o + 1 < outsz) out[o++] = *x++;
++            }
++            p += 6;
++            continue;
++        }
++        out[o++] = *p++;
++    }
++    out[o] = '\0';
++}
++
++/* Append shell-quoted arguments to an existing command string. */
++static void
++_dtl_append_args_on(char *buf, size_t sz, int argc, char **argv)
++{
++    size_t o = strlen(buf);
++    int i;
++    for (i = 0; i < argc && o + 1 < sz; i++) {
++        char q[4096];
++        int w;
++        _dtl_quote(argv[i], q, sizeof q);
++        w = snprintf(buf + o, sz - o, " %s", q);
++        if (w < 0 || (size_t)w >= sz - o) break;
++        o += (size_t)w;
++    }
++}
++
++static int
++_DtLocalActionFind(const char *name, int want_argc, const char *want_type,
++                   int strict, int argc, char **argv,
 +                   char *out, size_t outsz, int depth)
 +{
 +    char paths[8192];
++    char bestmap[512];
++    bestmap[0] = '\0';
 +    const char *dts = getenv("DTDATABASESEARCHPATH");
 +    if (dts && *dts) {
 +        strncpy(paths, dts, sizeof(paths) - 1); paths[sizeof(paths) - 1] = '\0';
@@ -99,6 +202,8 @@
 +                 "%s/appconfig/types:%s/appconfig/types/C", root, root);
 +    }
 +    char *save = NULL;
++    if (getenv("CDE_ACTION_DEBUG") && depth == 0)
++        fprintf(stderr, "MWACT paths=[%s]\n", paths);
 +    /* CDE separates database directories with a comma; accept a colon too
 +     * so the same code works with a hand-set DTDATABASESEARCHPATH. */
 +    for (char *dir = strtok_r(paths, ",:", &save); dir;
@@ -114,8 +219,9 @@
 +        struct dirent *de;
 +        while ((de = readdir(dp)) != NULL) {
 +            size_t nl = strlen(de->d_name);
-+            char fp[4096], line[4096], mapact[512], type[64], execstr[2048];
-+            int argcnt;
++            char fp[4096], line[4096], mapact[512], type[64],
++                 execstr[2048], argtype[64];
++            int argcnt, exec_cont = 0;
 +            FILE *f;
 +            int in = 0;
 +            if (nl < 3 || strcmp(de->d_name + nl - 3, ".dt") != 0) continue;
@@ -135,35 +241,53 @@
 +                               *e != '\r' && *e != '{') e++;
 +                        if ((size_t)(e - a) == strlen(name) &&
 +                            strncmp(a, name, (size_t)(e - a)) == 0) {
-+                            in = 1;
-+                            type[0] = '\0'; mapact[0] = '\0';
++                            in = 1; exec_cont = 0;
++                            type[0] = argtype[0] = mapact[0] = '\0';
 +                            execstr[0] = '\0'; argcnt = -1;
 +                        }
 +                    }
 +                    continue;
 +                }
++                /* A command line may continue onto the next line(s). */
++                if (exec_cont && *s != '}' && *s != '"') exec_cont = 0;
++                if (exec_cont && *s == '"') {
++                    size_t l = strlen(execstr);
++                    if (l + 1 < sizeof execstr) {
++                        snprintf(execstr + l, sizeof execstr - l, " %s", s);
++                        execstr[strcspn(execstr, "\r\n")] = '\0';
++                    }
++                    continue;
++                }
 +                if (*s == '}') {
-+                    /* End of the block: judge it now.  A database may define
-+                     * the same action name more than once, once per ARG_COUNT
-+                     * (e.g. Dticon is "dticon" with ARG_COUNT 0 and
-+                     * "dticon -file ..." with no ARG_COUNT, i.e. any).  CDE
-+                     * ranks an explicit ARG_COUNT over the wildcard, so the
-+                     * strict pass insists on an exact ARG_COUNT and the loose
-+                     * pass takes the first block.  Judging only once, after the
-+                     * file's last block, both skipped the earlier blocks and
-+                     * carried a stale ARG_COUNT across them. */
-+                    in = 0;
++                    /* End of the block: judge it now.  A database may define a
++                     * name once per ARG_COUNT and per ARG_TYPE (Dticon with and
++                     * without a file; Open once per datatype).  Judging only
++                     * once, after the file's last block, both skipped the
++                     * earlier blocks and carried a stale ARG_COUNT across them. */
++                    in = 0; exec_cont = 0;
++                    if (getenv("CDE_ACTION_DEBUG"))
++                        fprintf(stderr, "MWACT blk %s: type=%s argc=%d "
++                                "argtype=[%s] exec=[%s]\n",
++                                name, type, argcnt, argtype, execstr);
 +                    if (strcmp(type, "COMMAND") == 0 && execstr[0]) {
-+                        if (!strict || argcnt == want_argc) {
++                        int type_ok = !(strict && want_type && argtype[0]) ||
++                                      (strcmp(argtype, want_type) == 0);
++                        if (type_ok && _dtl_argc_ok(argcnt, want_argc)) {
 +                            fclose(f); closedir(dp);
-+                            snprintf(out, outsz, "%s", execstr);
++                            _dtl_expand(execstr, argc, argv, out, outsz);
 +                            return 1;
 +                        }
 +                    } else if (strcmp(type, "MAP") == 0 && mapact[0] &&
-+                               depth < 8) {
-+                        fclose(f); closedir(dp);
-+                        return _DtLocalActionFind(mapact, want_argc, strict,
-+                                                  out, outsz, depth + 1);
++                               !bestmap[0]) {
++                        /* Remember the first mapped action that fits; do not
++                         * recurse yet, or a map whose target is a ToolTalk
++                         * message (e.g. the InfoManager's Open) would abort the
++                         * whole search before the real Open for this datatype
++                         * is found in a later file. */
++                        int type_ok = !(strict && want_type && argtype[0]) ||
++                                      (strcmp(argtype, want_type) == 0);
++                        if (type_ok && _dtl_argc_ok(argcnt, want_argc))
++                            snprintf(bestmap, sizeof bestmap, "%s", mapact);
 +                    }
 +                    continue;
 +                }
@@ -176,27 +300,35 @@
 +                } else if (strncmp(s, "ARG_COUNT", 9) == 0) {
 +                    char *v = s + 9; while (*v == ' ' || *v == '\t') v++;
 +                    argcnt = atoi(v);
++                } else if (strncmp(s, "ARG_TYPE", 8) == 0) {
++                    char *v = s + 8; while (*v == ' ' || *v == '\t') v++;
++                    sscanf(v, "%63[^,\r\n \t]", argtype);
 +                } else if (strncmp(s, "EXEC_STRING", 11) == 0) {
 +                    char *v = s + 11; size_t l;
 +                    while (*v == ' ' || *v == '\t') v++;
 +                    l = strcspn(v, "\r\n");
 +                    if (l >= sizeof execstr) l = sizeof execstr - 1;
 +                    memcpy(execstr, v, l); execstr[l] = '\0';
++                    exec_cont = 1;
 +                }
 +            }
 +            fclose(f);
 +        }
 +        closedir(dp);
 +    }
++    if (bestmap[0] && depth < 8)
++        return _DtLocalActionFind(bestmap, want_argc, want_type, strict,
++                                  argc, argv, out, outsz, depth + 1);
 +    return 0;
 +}
 +
 +static int
-+_DtLocalActionRun(const char *name)
++_DtLocalActionRun(const char *name, int argc, DtActionArg *aap)
 +{
-+    char cmd[2048];
-+    /* Run through /bin/sh, so $CDE_ROOT/$HOME expand.  The File Manager opens
-+     * the current directory, so cd first for the "home" and "trash" buttons. */
++    char out[4096], tb[128];
++    char *argv[16];
++    int n = 0, i;
++    const char *want_type = NULL;
 +    /* The File Manager buttons run dtfile with CDE_DTFILE_SHOW naming the
 +     * view to open (the shim's private X root defeats dtfile's own
 +     * single-server lock). */
@@ -219,27 +351,83 @@
 +        { "DtLoadInfoLib",  "true" },
 +        { NULL, NULL }
 +    };
-+    int i;
 +    if (!name || !*name) return 0;
-+    if (_DtLocalActionFind(name, 0, 1, cmd, sizeof cmd, 0) ||
-+        _DtLocalActionFind(name, 0, 0, cmd, sizeof cmd, 0)) {
-+        if (cmd[0]) {
-+            _DtLocalActionExec(cmd);
++
++    /* Collect the arguments the caller supplied (file and string arguments
++     * carry their value in u.file.name; buffer arguments in u.buffer.name). */
++    for (i = 0; aap && i < argc && n < 16; i++) {
++        if (aap[i].argClass == DtACTION_FILE && aap[i].u.file.name)
++            argv[n++] = aap[i].u.file.name;
++        else if (aap[i].argClass == DtACTION_BUFFER && aap[i].u.buffer.name)
++            argv[n++] = aap[i].u.buffer.name;
++        else if (aap[i].argClass == DtACTION_STRING && aap[i].u.file.name)
++            argv[n++] = aap[i].u.file.name;
++    }
++    /* A file argument's datatype disambiguates actions that are defined once
++     * per type (Open, Print, ...). */
++    if (n > 0 && argv[0] && strchr(argv[0], '/')) {
++        char *t = DtDtsFileToDataType(argv[0]);
++        if (t && *t) {
++            strncpy(tb, t, sizeof tb - 1); tb[sizeof tb - 1] = '\0';
++            want_type = tb;
++        }
++    }
++
++    out[0] = '\0';
++    if (getenv("CDE_ACTION_DEBUG"))
++        fprintf(stderr, "MWACT run name=%s argc=%d argv0=%s want_type=%s\n",
++                name, n, n > 0 ? argv[0] : "-",
++                want_type ? want_type : "(null)");
++    /* With a datatype only the type-matched pass may be trusted: the loose
++     * pass would pick an arbitrary block (the generic "cannot open" action). */
++    {
++        int found = _DtLocalActionFind(name, n, want_type, 1, n, argv, out,
++                                       sizeof out, 0);
++        if (!found && !want_type)
++            found = _DtLocalActionFind(name, n, NULL, 0, n, argv, out,
++                                       sizeof out, 0);
++        if (found && getenv("CDE_ACTION_DEBUG"))
++            fprintf(stderr, "MWACT found -> %s\n", out);
++        if (found && out[0]) {
++            _DtLocalActionExec(out);
 +            return 1;
 +        }
 +    }
++    if (getenv("CDE_ACTION_DEBUG"))
++        fprintf(stderr, "MWACT not resolved\n");
++
++    /* Built-ins for the panel buttons and the File Manager's location
++     * buttons.  With arguments these are appended, so e.g. TextEditor <file>
++     * opens the file rather than an empty editor. */
 +    for (i = 0; builtin[i].action; i++) {
 +        if (strcmp(name, builtin[i].action) == 0) {
 +            const char *root = getenv("CDE_ROOT");
-+            char expanded[2048];
++            char expanded[4096];
 +            if (root && strncmp(builtin[i].cmd, "$CDE_ROOT", 9) == 0)
 +                snprintf(expanded, sizeof expanded, "%s%s", root,
 +                         builtin[i].cmd + 9);
 +            else
 +                snprintf(expanded, sizeof expanded, "%s", builtin[i].cmd);
++            if (n > 0)
++                _dtl_append_args_on(expanded, sizeof expanded, n, argv);
 +            _DtLocalActionExec(expanded);
 +            return 1;
 +        }
++    }
++    /* Text has no command action: its Open/Print map ends in a ToolTalk media
++     * message (DtTTMediaOpen) that asks a running editor to display the file.
++     * Start the editor on the file instead. */
++    if (n > 0 && want_type &&
++        (strcmp(want_type, "TEXTFILE") == 0 ||
++         strcmp(want_type, "ENRICHED_TEXT") == 0 ||
++         strcmp(want_type, "RICHTEXT") == 0)) {
++        const char *root = getenv("CDE_ROOT");
++        char expanded[4096];
++        snprintf(expanded, sizeof expanded, "exec \"%s\"/bin/dtpad",
++                 root ? root : "/usr/dt");
++        _dtl_append_args_on(expanded, sizeof expanded, n, argv);
++        _DtLocalActionExec(expanded);
++        return 1;
 +    }
 +    return 0;
 +}
@@ -247,11 +435,11 @@
  static void 
  NoToolTalkConnectionError(
          Widget w,
-@@ -1146,6 +1365,8 @@
+@@ -1146,6 +1553,8 @@
  	Tt_status status)
  
  {
-+	if (_DtLocalActionRun(actionName))
++	if (_DtLocalActionRun(actionName, 0, NULL))
 +		return;
  	XmString msg;
  	char *errmsg, *statmsg;

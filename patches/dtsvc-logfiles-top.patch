@@ -1,0 +1,35 @@
+--- a/lib/DtSvc/DtEncap/nls.c
++++ b/lib/DtSvc/DtEncap/nls.c
+@@ -36,17 +36,31 @@
+ 
+ #include <bms/bms.h>
+ #include <bms/MemoryMgr.h>
++#include <stdlib.h>	/* getenv, for the CDE_LOGFILES_TOP override below */
+ 
+ #ifndef CDE_LOGFILES_TOP
+ #define CDE_LOGFILES_TOP "/var/dt/tmp"
+ #endif
+ 
++/* cde-wayland: the SPC daemon (dtspcd) redirects its stderr to
++ * CDE_LOGFILES_TOP/DTSPCD.log and refuses to start if that path is
++ * unwritable.  /var/dt/tmp is a system path an unprivileged Wayland session
++ * cannot create, so allow CDE_LOGFILES_TOP to name a writable directory. */
++static XeString
++_LogTop(void)
++{
++    XeString e = (XeString) getenv("CDE_LOGFILES_TOP");
++    if (e && *e)
++	return e;
++    return (XeString) CDE_LOGFILES_TOP;
++}
++
+ /*------------------------------------------------------------------------+*/
+ XeString
+ XeSBTempPath(XeString suffix)
+ /*------------------------------------------------------------------------+*/
+ {
+-    XeString dir   = (XeString) CDE_LOGFILES_TOP;
++    XeString dir   = _LogTop();
+     XeString path;
+ 
+     if (!suffix || !*suffix)
