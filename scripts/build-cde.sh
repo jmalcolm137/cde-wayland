@@ -201,7 +201,7 @@ stage_libs() {
 stage_programs() {
     log "building CDE applications"
     local prog
-    for prog in dtcalc dtpad dthello dtstyle dtcm dtterm dtfile dthelp dtprintinfo; do
+    for prog in dtcalc dtpad dthello dtstyle dtcm dtterm dtfile dthelp dtprintinfo dtaction dtexec; do
         [ -d "$CDE_BUILD/programs/$prog" ] || continue
         log "  make -C programs/$prog"
         # Some programs generate headers under the `includes` target that the
@@ -248,9 +248,12 @@ stage_install() {
     ( cd "$CDE_BUILD/include" && make "${MAKE_OVERRIDES[@]}" install ) || warn "include install failed"
     ( cd "$CDE_BUILD/lib"     && make "${MAKE_OVERRIDES[@]}" install ) || warn "lib install failed"
     # The Front Panel launches these by name from PATH, so they must land in
-    # $CDE_ROOT/bin.
+    # $CDE_ROOT/bin.  dtaction is CDE's action-invocation CLI; dtexec is the
+    # "command invoker" sub-process the action machinery execs for every
+    # command action (<prefix>/bin/dtexec -open 0 -ttprocid ...).  Without it
+    # no action that goes through the normal path can run.
     local p
-    for p in dtcalc dtpad dthello dtstyle dtcm dtterm dtfile dthelp dtprintinfo dtsession; do
+    for p in dtcalc dtpad dthello dtstyle dtcm dtterm dtfile dthelp dtprintinfo dtaction dtexec dtsession; do
         [ -d "$CDE_BUILD/programs/$p" ] || continue
         ( cd "$CDE_BUILD/programs/$p" && make "${MAKE_OVERRIDES[@]}" install ) \
             || warn "programs/$p install failed"
