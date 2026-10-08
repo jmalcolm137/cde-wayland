@@ -38,6 +38,9 @@ CDE_PREFIX="${CDE_PREFIX:-$HOME/.local/motif-wayland}"
 WAYLAND_DISPLAY="${WAYLAND_DISPLAY:?set WAYLAND_DISPLAY to the session compositor (e.g. wayland-1)}"
 export WAYLAND_DISPLAY
 BIN="$CDE_PREFIX/bin"
+# The storyboard's file-manager directory (the icons it opens and drags).
+DEMO_DIR="${DEMO_DIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)/demo}"
+export DEMO_DIR
 
 out=demo.gif
 fps=8
@@ -126,12 +129,16 @@ ffmpeg -y -loglevel error -framerate "$eff_fps" -i "$frames/%06d.png" \
     -vf "$scale_filter" -c:v libx264 -pix_fmt yuv420p -crf 20 -movflags +faststart \
     "${out%.*}.mp4"
 
-# GIF via a generated palette (much better than ffmpeg's default for UI art)
+# GIF via a generated palette (much better than ffmpeg's default for UI art).
+# -offsetting disables the encoder's default "write only the changed rectangle
+# in each frame" optimisation: those minimal patches are smaller, but viewers
+# that cannot cope with them (KDE's gwenview, for one) hang on the file.
 pal="$(mktemp --suffix=.png)"
 ffmpeg -y -loglevel error -framerate "$eff_fps" -i "$frames/%06d.png" \
-    -vf "$scale_filter,palettegen=stats_mode=diff" "$pal"
+    -vf "$scale_filter,palettegen=stats_mode=full" "$pal"
 ffmpeg -y -loglevel error -framerate "$eff_fps" -i "$frames/%06d.png" -i "$pal" \
-    -lavfi "$scale_filter[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=3:diff_mode=rectangle" \
+    -gifflags -offsetting \
+    -lavfi "$scale_filter[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=3" \
     -loop 0 "$out"
 rm -f "$pal"
 

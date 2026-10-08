@@ -40,9 +40,9 @@ sleep 5
 sleep 1.5
 
 # --- 4. File Manager -------------------------------------------------------
-"$M" exec dtfile -dir "$HOME/AAA" >/dev/null 2>&1
+"$M" exec dtfile -dir "$DEMO_DIR" >/dev/null 2>&1
 sleep 5
-"$M" focus -t '%File Manager - AAA' >/dev/null 2>&1 || true
+"$M" focus -t '%File Manager - demo' >/dev/null 2>&1 || true
 "$M" window-move -x 8 -y 25 >/dev/null 2>&1
 "$M" window-resize -w 555 -h 300 >/dev/null 2>&1
 sleep 1.5
