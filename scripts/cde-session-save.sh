@@ -32,6 +32,10 @@ is_infra() {
         dbus-daemon|dbus-launch|dbus-run-session|xembedsniproxy) return 0 ;;
         cde-session.sh|cde-session-save.sh|cde-session-restore.sh|cde-logout.sh) return 0 ;;
         cde-wsm|cde-wsm-desk|cde-wsm-backdrop|cde-motif-apply|cde-panel) return 0 ;;
+        # The palette watcher polls with sleep, and both would otherwise be
+        # recorded as session clients (it lives in the session's process tree,
+        # so it inherits the marker like any other application).
+        cde-palette-watch|sleep) return 0 ;;
         bash|sh|env) return 0 ;;
         *) return 1 ;;
     esac
