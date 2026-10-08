@@ -167,6 +167,21 @@ fi
 TT_ARGS+=( -c "$conf_home/river/init" )
 
 log "starting River under a ToolTalk session (init: $conf_home/river/init)"
+# The shim only relays shared properties when XLIB_WAYLAND_SHARE_PROPERTIES names
+# them, and only reads the session resource file when XENVIRONMENT points at it.
+# ttsession inherits this environment, and so does everything it starts on its
+# own -- in particular the ToolTalk ptype servers such as `dtpad -server`, which
+# is what actually opens those windows (the `dtpad` we launch just messages it).
+# Without these two variables those clients build a resource database with no
+# *background from the colour server and paint Motif's default grey, while a
+# client launched directly with the full environment is palette-coloured.
+# cde-env.sh sets both for the clients we launch ourselves; set them for the
+# ToolTalk tree too.
+export XLIB_WAYLAND_SHARE_PROPERTIES="${XLIB_WAYLAND_SHARE_PROPERTIES-_DT_SM_,RESOURCE_MANAGER}"
+if [ -z "${XENVIRONMENT:-}" ] && [ -f "$CDE_PREFIX/share/cde-wayland/Xresources" ]; then
+    export XENVIRONMENT="$CDE_PREFIX/share/cde-wayland/Xresources"
+fi
+
 # A fresh session starts with auto-repeat on and a clean atom table; the shim
 # shares both through XDG_RUNTIME_DIR, so stale state from a previous session
 # would otherwise leak in.
