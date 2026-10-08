@@ -93,6 +93,23 @@ if [ -f "$PROJECT_ROOT/tools/cde-palette-colours.c" ]; then
     fi
 fi
 
+# xrdb, built against the shim.  dtsession restores the session's resources by
+# running dtsession_res, which pipes CDE's sys.resources and ~/.Xdefaults into
+# xrdb; without one that step fails, and the system xrdb cannot stand in because
+# it is linked against the system libX11 and would talk to Xwayland instead of
+# the shim.  This one writes RESOURCE_MANAGER on its own root, which the shim
+# publishes to the shared store, so the resources reach every client started
+# afterwards.
+if [ -f "$PROJECT_ROOT/tools/xrdb.c" ]; then
+    if "${CC:-gcc}" -o "$CDE_PREFIX/bin/xrdb" "$PROJECT_ROOT/tools/xrdb.c" \
+            -I"$CDE_PREFIX/include" -L"$CDE_PREFIX/lib" \
+            -lX11 -Wl,-rpath,"$CDE_PREFIX/lib" 2>/dev/null; then
+        ok "installed xrdb (dtsession_res can load resources)"
+    else
+        warn "could not build xrdb; dtsession_res will keep failing"
+    fi
+fi
+
 # Root-menu helpers: "Restart Workspace Manager..." and "Log out...".
 for h in cde-restart-dtwm.sh cde-logout.sh cde-toggle-frontpanel.sh cde-wsm-backdrop.sh cde-motif-apply.sh cde-session-save.sh cde-session-restore.sh cde-palette-watch.sh cde-cow-colours.sh; do
     [ -f "$PROJECT_ROOT/scripts/$h" ] || continue
