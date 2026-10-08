@@ -113,6 +113,14 @@ install_session_resources "$CDE_PREFIX/share/cde-wayland/Xresources"
 # to a single core font and draws only a quarter of each multibyte string.
 install_session_resources "$conf_home/xlib-wayland/Xresources"
 
+# The shim falls back to ~/.config/xlib-wayland/Xresources when XDG_CONFIG_HOME
+# is not set (a client started outside the session, a diagnostic run).  Keep
+# that copy in step as well: an old one from before the *Background/*Foreground
+# fallback was dropped still carried those hand-picked colours, and because they
+# are more specific than the relayed palette's bare *background they won in Xrm
+# and painted the client with them instead of the palette.
+install_session_resources "${HOME:-/nonexistent}/.config/xlib-wayland/Xresources"
+
 export XDG_CONFIG_HOME="$conf_home"
 
 # In nested mode River is a client of the outer compositor, but the session's
