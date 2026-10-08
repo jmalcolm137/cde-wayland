@@ -1,0 +1,44 @@
+SrvPalette: publish the current colour pixel set instead of appending it
+
+_DtCacheProperties() holds the "SDT Pixel Set" property that Motif's XmColorObj
+reads to colour every CDE application: DtInitialize fetches it through the
+colour server's selection, and the pixel sets in it are what CDE applications
+paint their widgets with (the desktop colour comes from RESOURCE_MANAGER, but
+applications do not take their widget colours from there).
+
+It appended (PropModeAppend) a fresh copy on every palette change, so the
+property accumulated every palette the session had ever used and grew without
+bound.  A client then received whichever block the relay happened to hand it,
+which Motif could not use, and the application fell back to its default colours.
+Replace the property instead, and stop incrementing the cached string's length
+on every call.  The value ends with the version byte, which is where Motif
+expects it.
+--- a/programs/dtsession/SrvPalette.c
++++ b/programs/dtsession/SrvPalette.c
+@@ -345,12 +345,20 @@
+        palette->converted_len = strlen(palette->converted);
+      }
+   
+-  *(palette->converted + palette->converted_len) = XmPIXEL_SET_PROP_VERSION ;
+-  palette->converted_len++ ;
+-  palette->converted[palette->converted_len] = 0 ;
+-  XChangeProperty(dpy, win, pixel_set_atom, XA_STRING, 8, PropModeAppend, 
+-		 (unsigned char *) XtNewString(palette->converted), 
+-		 palette->converted_len) ;
++  /*
++   * cde-wayland: publish the current pixel set, replacing whatever was there.
++   * Motif's XmColorObj reads this property to colour every CDE application, and
++   * it expects the value to be the set followed by the version byte.  Appending
++   * (PropModeAppend) instead left every palette the session had ever used in the
++   * property, growing it without bound, and a client could end up with a block
++   * it could not use -- leaving the application at Motif's default colours.
++   * The cached string's length is its own: the version byte overwrites its
++   * terminator, which is where Motif expects to find it.
++   */
++  palette->converted[palette->converted_len] = XmPIXEL_SET_PROP_VERSION ;
++  XChangeProperty(dpy, win, pixel_set_atom, XA_STRING, 8, PropModeReplace,
++		 (unsigned char *) palette->converted,
++		 palette->converted_len + 1) ;
+ }
+ 
+ /*****************************************************************************
