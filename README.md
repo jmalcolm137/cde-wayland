@@ -81,14 +81,19 @@ What runs today:
 ### How actions are executed
 
 CDE runs an action by handing it to the *Command Invoker*, which execs
-`dtexec` and falls back to the SPC daemon (`dtspcd`) for a host it considers
-remote. That path cannot run here — `dtspcd` is an inetd-style, per-connection
-daemon we do not run, so the invocation simply blocks. Instead, actions are
-resolved and started locally (`patches/dt-action-local-exec.patch`): the action
-name is looked up in the `.dt` databases (matching `ARG_COUNT` and `ARG_TYPE`),
-its command line is expanded (`%Arg_n%`, `%(class)Arg_n`, continuation lines)
-and executed. That is what makes a File Manager double-click and a file dropped
-on a panel control work. See *What's left*.
+`dtexec`. That path works: `dtexecPath` is compiled from the install root, and
+the `.dt` databases are regenerated on every panel build — the cpp rules only
+rewrite a *missing* target, and a `.dt` generated before the `CppCmd` fix
+silently dropped every `EXEC_STRING` continuation, and with it the action's
+arguments.
+
+By default the session still uses a local overlay
+(`patches/dt-action-local-exec.patch`) that resolves the action against the
+`.dt` databases and runs it directly. It carries this project's overrides (the
+Application Manager's gathered directory, the File Manager location buttons,
+`DtLoadInfoLib`) and is a fallback for a session where CDE's own path cannot
+run. Set `CDE_LOCAL_ACTIONS=0` to leave every action to CDE's own machinery —
+that is what the README's verification below uses.
 
 | M | Scope | State |
 |---|---|---|
@@ -164,13 +169,12 @@ scripts/run-app.sh dtcalc
 
 ## What's left
 
-* **Real action execution.** Actions are resolved and started locally (see
-  *How actions are executed*). Getting CDE's own path working means fixing
-  `dtexecPath` — it is a stale `CmdProcess.o` compiled against an older install
-  root — and giving the Command Invoker a usable SPC daemon: `dtspcd` is
-  inetd-style, so it needs a portmapper that can `CALLIT`, or an inetd. That
-  would let us drop `dt-action-local-exec`, `dtsvc-no-tooltalk`,
-  `dtwm-no-tooltalk` and `libtt-no-autostart`.
+* **Retire the action overlay.** CDE's own path works now (see *How actions are
+  executed*), so the remaining step is to move this project's overrides into the
+  action databases (`config/dtwm-types/*.dt`, as `DtLoadInfoLib` already is) and
+  drop `dt-action-local-exec`. The ToolTalk opt-out patches
+  (`dtsvc-no-tooltalk`, `dtwm-no-tooltalk`, `libtt-no-autostart`) should go the
+  same way once the panel no longer needs them.
 * **Login (M7).** Stock `dtlogin` needs `XSetAuthorization` in the shim just to
   link, and spawns an X server to host its greeter — which does not fit an
   architecture where every client has a private root. A Wayland-hosted greeter

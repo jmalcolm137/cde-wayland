@@ -218,15 +218,16 @@ stage_programs() {
 # under CoW, never as the session's window manager (see DESIGN.md §5.2).
 stage_panel() {
     log "building the real CDE Front Panel (dtwm) and its data"
-    # Remove stale half-generated files: the cpp rules only regenerate a target
-    # that is missing, and an earlier build (before CppCmd was corrected) left
-    # zero-length Dtwm.defs/dtwm.fp behind.
+    # Remove stale cpp output.  The cpp rules only regenerate a *missing*
+    # target, so anything cpp produced before CppCmd was corrected (or before
+    # the install prefix changed) stays wrong: Dtwm.defs/sys.dtwmrc/dtwm.fp were
+    # left zero-length, and the .dt files carry EXEC_STRINGs whose continuation
+    # lines were never joined, which silently drops action arguments.
     rm -f "$CDE_BUILD/programs/dtwm/Dtwm.defs" \
           "$CDE_BUILD/programs/dtwm/sys.dtwmrc" \
           "$CDE_BUILD/programs/types/dtwm.fp"
-    # Empty .dt files (cpp output lost before CppCmd was corrected) hide the
-    # action definitions the panel needs.
-    find "$CDE_BUILD/programs/types" -maxdepth 1 -name '*.dt' -size 0 -delete 2>/dev/null || true
+    find "$CDE_BUILD/programs/types" -maxdepth 1 -name '*.src' -print0 2>/dev/null |
+        while IFS= read -r -d '' _src; do rm -f "${_src%.src}"; done
     local sub
     for sub in programs/dtwm programs/types lib/tt/bin/ttsession; do
         [ -d "$CDE_BUILD/$sub" ] || continue

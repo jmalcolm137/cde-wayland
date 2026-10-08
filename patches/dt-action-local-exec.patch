@@ -11,18 +11,19 @@
  #include <limits.h>
  
  #include <X11/Intrinsic.h>
-@@ -100,6 +104,10 @@
+@@ -100,6 +104,11 @@
  #include "myassertP.h"
  #include "DtSvcLock.h"
  
 +/* cde-wayland: defined near NoToolTalkConnectionError below.  Lets
 + * DtActionInvoke() resolve and run an action locally. */
 +static int _DtLocalActionRun(const char *name, int argc, DtActionArg *aap);
++static int _dtl_enabled(void);
 +
  #ifndef CDE_INSTALLATION_TOP
  #define CDE_INSTALLATION_TOP "/opt/dt"
  #endif
-@@ -519,6 +527,19 @@
+@@ -519,6 +528,19 @@
        w = XtParent(w);
      
      _DtSvcProcessLock();
@@ -33,7 +34,7 @@
 +     * the .dt databases / built-in table and run its command directly; actions
 +     * with no local command (ToolTalk messages, XSMP, ...) fall through to the
 +     * normal path below. */
-+    if (_DtLocalActionRun(action, aac, aap))
++    if (_dtl_enabled() && _DtLocalActionRun(action, aac, aap))
 +    {
 +        _DtSvcProcessUnlock();
 +        return 0;
@@ -42,7 +43,7 @@
      if ( !initialized )
      {
        mode_t mode;
-@@ -1139,6 +1160,392 @@
+@@ -1139,6 +1161,400 @@
   * one, then we will fail and post an error dialog.
   */
  
@@ -88,6 +89,14 @@
 +/* Match a block against the requested argument count.  CDE ranks an explicit
 + * ARG_COUNT over an absent (wildcard) one, and a wildcard block accepts any
 + * number of arguments. */
++/* cde-wayland: the local action overlay can be disabled with
++ * CDE_LOCAL_ACTIONS=0, which leaves CDE's own execution path in charge. */
++static int _dtl_enabled(void)
++{
++    const char *e = getenv("CDE_LOCAL_ACTIONS");
++    return !(e && e[0] == '0' && e[1] == '\0');
++}
++
 +static int
 +_dtl_argc_ok(int argcnt, int want)
 +{
@@ -435,7 +444,7 @@
  static void 
  NoToolTalkConnectionError(
          Widget w,
-@@ -1146,6 +1553,8 @@
+@@ -1146,6 +1562,8 @@
  	Tt_status status)
  
  {
