@@ -176,11 +176,6 @@ scripts/run-app.sh dtcalc
 
 ## What's left
 
-* **Retire the ToolTalk opt-out patches.** `dtsvc-no-tooltalk`,
-  `dtwm-no-tooltalk` and `libtt-no-autostart` are all gated on
-  `CDE_NO_TOOLTALK`, which the session no longer sets, so they are already
-  inert — but they date from when ToolTalk did not work and should be dropped
-  once the panel is confirmed without them.
 * **Login (M7).** Stock `dtlogin` needs `XSetAuthorization` in the shim just to
   link, and spawns an X server to host its greeter — which does not fit an
   architecture where every client has a private root. A Wayland-hosted greeter
@@ -219,7 +214,6 @@ pristine source is never touched.
 | `dtwm-subpanel-unpost.patch` | unmap a sub-panel instead of `CallWmFunction(F_Kill)` |
 | `dtwm-wsm-desk.patch`, `dtwm-wsm-list.patch` | drive and read CoW's desks from dtwm |
 | `dtwm-empty-clientlist.patch` | do not dereference an empty client list |
-| `dtwm-no-tooltalk.patch`, `dtsvc-no-tooltalk.patch`, `libtt-no-autostart.patch` | keep ToolTalk out of panel/session startup |
 | `rpccmsd-nonroot.patch` | key the private calendar spool off `CDE_CMSD_DIR`, not `euid` |
 | `cow-decoration-hint.patch`, `cow-transient-stacking.patch` | CoW: honour MWM decoration hints and transient stacking |
 

@@ -48,10 +48,9 @@ fi
 
 # ToolTalk.  run-session.sh starts the whole session under `ttsession -c`, so
 # TT_SESSION is exported to every client and CDE apps get the ToolTalk services
-# they expect (the File Manager, Mailer, etc. are ToolTalk programs).  dtwm is
-# the one exception: cde-session.sh starts it with CDE_NO_TOOLTALK so it skips
-# its own messaging/workspace-manager registration and simply creates the Front
-# Panel.  Do not clobber TT_SESSION here.
+# they expect (the File Manager, Mailer, etc. are ToolTalk programs; the Front
+# Panel is dtwm, whose workspace-manager service is ToolTalk too).  Do not
+# clobber TT_SESSION here.
 
 # _MOTIF_WM_HINTS: the compositor's WM (CoW) cannot refuse a command for one
 # window, so xlib-wayland relays the functions a client allows to CoW by hiding
