@@ -26,11 +26,12 @@
 ! setting has to live here.
 *ColorUse:		HIGH_COLOR
 
-! Fallbacks for a client that starts before the colour server has published the
-! palette (the panel is held back until it has, see config/cde-session.sh).
-! These are class resources, so the palette's *background / *foreground win.
-*Background:		#aeb2c3
-*Foreground:		#000000
+! No *Background / *Foreground fallback here on purpose.  In CDE the colour
+! server's publication is the only source of the desktop colours, and a
+! class-level fallback of ours would sit in front of the palette's *background /
+! *foreground and mask it (clients painted the fallback, not the palette).  If
+! the palette is missing, Motif's own default applies, which is what a CDE
+! session without a colour server does too.
 
 ! A readable proportional and fixed font; the shim matches these XLFDs through
 ! fontconfig and never fails to load a font.
