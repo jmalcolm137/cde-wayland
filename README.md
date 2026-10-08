@@ -19,9 +19,7 @@ in-process Xlib, the CDE component strategy, and the milestone plan.
 
 The Workspace Menu starts the Terminal, `dtcalc` is launched from it, the File
 Manager opens a text file on a double-click, and dragging `pic2.xpm` onto the
-Front Panel's Icon Editor launches `dticon`. The same clip as MP4:
-[docs/demo.mp4](docs/demo.mp4). Recorded from a live session with
-[`scripts/demo-record.sh`](scripts/demo-record.sh).
+Front Panel's Icon Editor launches `dticon`.
 
 ## Where changes live
 
