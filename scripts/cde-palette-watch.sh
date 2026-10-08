@@ -38,13 +38,18 @@ sig() { grep -a '^_DT_SM_PREFERENCES' "$store" 2>/dev/null | head -1; }
 # at the next login.
 state="${XDG_STATE_HOME:-$HOME/.local/state}/cde-wayland"
 save_palette() {
-    _line="$(grep -a '^RESOURCE_MANAGER' "$store" 2>/dev/null | head -1)"
+    _line="${1:-$(grep -a '^RESOURCE_MANAGER' "$store" 2>/dev/null | head -1)}"
     [ -n "$_line" ] || return 0
     mkdir -p "$state" 2>/dev/null || true
     if printf '%s\n' "$_line" >"$state/resource-manager.tmp" 2>/dev/null; then
         mv -f "$state/resource-manager.tmp" "$state/resource-manager" 2>/dev/null
     fi
 }
+
+# Saving is driven by the relayed database itself rather than by the restart
+# path, so the copy stays current even when a change does not need a restart (or
+# the restart fails): any palette the colour server publishes is recorded.
+rm_sig() { grep -a '^RESOURCE_MANAGER' "$store" 2>/dev/null | head -1; }
 
 # The panel watcher must not outlive the session: a leftover instance would see
 # the next session's palette as a change and restart its colour server.  CoW is
@@ -101,8 +106,16 @@ while [ "$stable" -lt 3 ]; do
 done
 save_palette
 
+prev_rm=""
 while :; do
     session_alive || exit 0
+    # Record the palette whenever the relayed database changes, independently of
+    # whether a restart is needed, so the durable copy cannot lag behind.
+    cur_rm="$(rm_sig)"
+    if [ -n "$cur_rm" ] && [ "$cur_rm" != "$prev_rm" ]; then
+        prev_rm="$cur_rm"
+        save_palette "$cur_rm"
+    fi
     sleep 2
     cur="$(sig)"
     [ "$cur" = "$prev" ] && continue
@@ -122,5 +135,4 @@ while :; do
             stable=0
         fi
     done
-    save_palette
 done
