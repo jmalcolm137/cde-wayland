@@ -211,6 +211,10 @@ rootless, and delegate window management to the compositor. See
   store (`current`/`home`), sets the home session and gates the logout
   confirmation, but what is saved is still the Wayland-side process marker: no
   window geometry or desk is recorded.
+* **Style Manager is slow to put its window up.** `dtstyle` is launched through
+  `dtexec`/ToolTalk and has been seen to take tens of seconds to map (it was
+  easy to mistake for "it did not start"), which makes the module feel
+  unresponsive. Not investigated.
 * **Input methods.** Only `ibus-engine-simple` is installed — the XIM bridge
   works, but there is no real engine (pinyin, …) to compose with.
 * **Mailer.** `dtmail` wants a setgid `mail` group (or a non-spool mailbox); a
