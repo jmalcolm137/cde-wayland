@@ -36,6 +36,11 @@
 *XmPushButton.background:	#aeb2c3
 *XmPushButton.foreground:	#000000
 *XmToggleButton.selectColor:	#0f3977
+! CDE draws almost every button with the *gadget* classes.  Motif derives a
+! gadget's select colour from the background unless the class is named here, so
+! a radio box's selected diamond was filled with the background and looked
+! unselected (the state was correct all along).
+*XmToggleButtonGadget.selectColor:	#0f3977
 
 ! The Style Manager - Font dialog matches the current *systemFont against its
 ! Dtstyle*SystemFont1..7 list (14-pt Helvetica by default).  Set the system
