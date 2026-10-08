@@ -192,6 +192,15 @@ Run one application against the bundled headless compositor:
 scripts/run-app.sh dtcalc
 ```
 
+## What can this do that X11 CDE cannot?
+
+Stock CDE on the Wayland shim can do a few things a classic X11 CDE session
+cannot: run natively in a Wayland session (no X server, no Xwayland), exchange
+clipboard and drag-and-drop with native Wayland applications, use the
+compositor's input-method stack, keep each client isolated, install and run
+rootless, and delegate window management to the compositor. See
+[docs/WAYLAND-ADVANTAGES.md](docs/WAYLAND-ADVANTAGES.md).
+
 ## What's left
 
 * **Login (M7).** Stock `dtlogin` needs `XSetAuthorization` in the shim just to
