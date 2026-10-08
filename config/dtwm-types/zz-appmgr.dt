@@ -1,0 +1,18 @@
+# cde-wayland: the Front Panel's Applications control.
+#
+# CDE's Dtappmgr is a ToolTalk request that asks the File Manager to show
+# /var/dt/appconfig/appmanager/$DTUSERSESSION, which an unprivileged session
+# cannot create.  dtappgather collects the application groups into
+# TARGET_APPMAN_DIR instead (see config/cde-env.sh and config/backdrops.conf's
+# neighbours), so open that directory directly.  Installed into ~/.dt/types by
+# scripts/install-panel-data.sh.
+
+ACTION Dtappmgr
+{
+    LABEL Application Manager
+    ICON Fpapps
+    ARG_COUNT 0
+    TYPE COMMAND
+    WINDOW_TYPE NO_STDIO
+    EXEC_STRING /bin/sh -c 'exec cde-appmgr'
+}

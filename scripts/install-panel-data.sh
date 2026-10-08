@@ -60,8 +60,9 @@ if [ -f "$PROJECT_ROOT/tools/cde-wsm.c" ]; then
     fi
 fi
 
-# Root-menu helpers: "Restart Workspace Manager..." and "Log out...".
-for h in cde-restart-dtwm.sh cde-logout.sh cde-toggle-frontpanel.sh cde-wsm-backdrop.sh cde-motif-apply.sh cde-session-save.sh cde-session-restore.sh; do
+# Root-menu helpers: "Restart Workspace Manager..." and "Log out...", and the
+# Application Manager launcher.
+for h in cde-restart-dtwm.sh cde-logout.sh cde-toggle-frontpanel.sh cde-wsm-backdrop.sh cde-motif-apply.sh cde-session-save.sh cde-session-restore.sh cde-appmgr.sh; do
     [ -f "$PROJECT_ROOT/scripts/$h" ] || continue
     install -D -m 0755 "$PROJECT_ROOT/scripts/$h" \
         "$CDE_ROOT/bin/$(basename "$h" .sh)"
@@ -340,8 +341,8 @@ if [ -d "$CDE_BUILD/programs/backdrops" ]; then
             # horizontal dither shows as stripes.  Flatten each row to its
             # average and widen the tile so it reads as a smooth gradient.
             # Real tiles start at ~28px (PinStripe), so 16 is a safe cutoff.
-            _w="$("$_conv" identify -format '%w' "$f" 2>/dev/null)"
-            _h="$("$_conv" identify -format '%h' "$f" 2>/dev/null)"
+            _w="$("$_conv" identify -format '%w' "$f" 2>/dev/null || true)"
+            _h="$("$_conv" identify -format '%h' "$f" 2>/dev/null || true)"
             for d in "$HOME/.dt/backdrops" "$CDE_ROOT/backdrops"; do
                 _png="$d/$_b.png"
                 # Always reconvert: it is cheap and keeps the PNGs in step with

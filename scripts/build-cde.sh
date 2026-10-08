@@ -279,6 +279,19 @@ printf '    root   : %s\n' "$CDE_ROOT"
 printf '    cpp    : %s\n' "$CPP_BIN"
 printf '    stages : %s\n' "${STAGES[*]}"
 
+# Compiled objects embed the install prefix (dtexecPath, the leaf programs'
+# defaults), so a build tree built against a different prefix keeps running the
+# old paths.  Remember the prefix and, when it changes, drop the objects and
+# archives so they are rebuilt against the new one.
+_prefix_stamp="$CDE_BUILD/.cde-prefix"
+if [ -d "$CDE_BUILD" ] && [ -f "$_prefix_stamp" ] &&
+   [ "$(cat "$_prefix_stamp" 2>/dev/null)" != "$CDE_PREFIX" ]; then
+    warn "install prefix changed ($(cat "$_prefix_stamp") -> $CDE_PREFIX);"
+    warn "removing stale objects so they are rebuilt"
+    find "$CDE_BUILD" -name '*.o' -delete 2>/dev/null || true
+    find "$CDE_BUILD" -name '*.a' -delete 2>/dev/null || true
+fi
+
 for st in "${STAGES[@]}"; do
     case "$st" in
         prepare)   stage_prepare ;;
@@ -293,5 +306,7 @@ for st in "${STAGES[@]}"; do
         *)         die "unknown stage: $st" ;;
     esac
 done
+
+[ -d "$CDE_BUILD" ] && printf '%s\n' "$CDE_PREFIX" > "$_prefix_stamp"
 
 ok "done"

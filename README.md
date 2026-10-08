@@ -81,19 +81,26 @@ What runs today:
 ### How actions are executed
 
 CDE runs an action by handing it to the *Command Invoker*, which execs
-`dtexec`. That path works: `dtexecPath` is compiled from the install root, and
-the `.dt` databases are regenerated on every panel build — the cpp rules only
-rewrite a *missing* target, and a `.dt` generated before the `CppCmd` fix
-silently dropped every `EXEC_STRING` continuation, and with it the action's
-arguments.
+`dtexec`; that is what this session uses (a File Manager double-click and a
+file dropped on a panel control both end up there). Two build details make it
+work: `dtexecPath` is compiled from the install root — and `build-cde.sh` now
+clears stale objects when the prefix changes — and the `.dt` databases are
+regenerated on every panel build, because the cpp rules only rewrite a *missing*
+target and a `.dt` generated before the `CppCmd` fix silently dropped every
+`EXEC_STRING` continuation, and with it the action's arguments.
 
-By default the session still uses a local overlay
-(`patches/dt-action-local-exec.patch`) that resolves the action against the
-`.dt` databases and runs it directly. It carries this project's overrides (the
-Application Manager's gathered directory, the File Manager location buttons,
-`DtLoadInfoLib`) and is a fallback for a session where CDE's own path cannot
-run. Set `CDE_LOCAL_ACTIONS=0` to leave every action to CDE's own machinery —
-that is what the README's verification below uses.
+A few actions are overridden where CDE's definition does not suit a private-root
+Wayland session. They live in `config/dtwm-types/*.dt` and are installed into
+`~/.dt/types`:
+
+| Action | Why |
+|---|---|
+| `Dtappmgr` | CDE asks the File Manager for `/var/dt/appconfig/appmanager/$DTUSERSESSION`, which an unprivileged session cannot create; `cde-appmgr` opens the directory `dtappgather` collects instead |
+| `DtLoadInfoLib` | start `dtinfo` directly rather than rely on ptype auto-start |
+| `LockDisplay` | run `waylock` instead of a ToolTalk request to dtsession |
+
+`ExitSession` is rewritten the same way by `install-panel-data.sh` (it runs
+`cde-logout`).
 
 | M | Scope | State |
 |---|---|---|
@@ -169,12 +176,11 @@ scripts/run-app.sh dtcalc
 
 ## What's left
 
-* **Retire the action overlay.** CDE's own path works now (see *How actions are
-  executed*), so the remaining step is to move this project's overrides into the
-  action databases (`config/dtwm-types/*.dt`, as `DtLoadInfoLib` already is) and
-  drop `dt-action-local-exec`. The ToolTalk opt-out patches
-  (`dtsvc-no-tooltalk`, `dtwm-no-tooltalk`, `libtt-no-autostart`) should go the
-  same way once the panel no longer needs them.
+* **Retire the ToolTalk opt-out patches.** `dtsvc-no-tooltalk`,
+  `dtwm-no-tooltalk` and `libtt-no-autostart` are all gated on
+  `CDE_NO_TOOLTALK`, which the session no longer sets, so they are already
+  inert — but they date from when ToolTalk did not work and should be dropped
+  once the panel is confirmed without them.
 * **Login (M7).** Stock `dtlogin` needs `XSetAuthorization` in the shim just to
   link, and spawns an X server to host its greeter — which does not fit an
   architecture where every client has a private root. A Wayland-hosted greeter
@@ -206,7 +212,6 @@ pristine source is never touched.
 
 | Patch | Purpose |
 |---|---|
-| `dt-action-local-exec.patch` | resolve and run actions locally (see above) |
 | `dtappgather-target.patch` | let `dtappgather` gather into a writable directory |
 | `dtsvc-logfiles-top.patch` | allow `CDE_LOGFILES_TOP` from the environment (`dtspcd`) |
 | `dtsvc-backdrop.patch` | run `cde-wsm-backdrop` when the Style Manager changes the backdrop |
