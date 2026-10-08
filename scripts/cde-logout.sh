@@ -9,6 +9,22 @@
 # then the window manager, compositor and ToolTalk session.
 set -u
 
+# Ask for confirmation first, unless the user turned the dialog off.  The Style
+# Manager's Startup module records that in $CDE_STARTUP_PREF (see
+# patches/dtstyle-startup.patch); CDE_LOGOUT_CONFIRM=0/1 overrides it.
+want_confirm=0
+case "${CDE_LOGOUT_CONFIRM:-}" in
+    1) want_confirm=1 ;;
+    0) want_confirm=0 ;;
+    *) pref="${CDE_STARTUP_PREF:-}"
+       [ -n "$pref" ] || \
+           pref="${CDE_SESSION_ROOT:-${XDG_STATE_HOME:-$HOME/.local/state}/cde-wayland/sessions}/startup"
+       [ "$(sed -n '2p' "$pref" 2>/dev/null)" = "on" ] && want_confirm=1 ;;
+esac
+if [ "$want_confirm" = 1 ] && command -v cde-confirm >/dev/null 2>&1; then
+    cde-confirm "Log out" "Do you want to end your session?" || exit 0
+fi
+
 # Record what is running before tearing the session down, so the next start can
 # bring it back (cde-session.sh runs cde-session-restore.sh).
 if command -v cde-session-save.sh >/dev/null 2>&1; then

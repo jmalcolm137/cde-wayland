@@ -60,6 +60,22 @@ if [ -f "$PROJECT_ROOT/tools/cde-wsm.c" ]; then
     fi
 fi
 
+# Logout confirmation dialog: the Front Panel's Exit runs cde-logout in a shell,
+# which has no way to post a Motif dialog of its own.  dtsession cannot post it
+# either (no shared X server), so cde-confirm is the client cde-logout uses.  The
+# Style Manager's Startup module decides whether it is shown.
+if [ -f "$PROJECT_ROOT/tools/cde-confirm.c" ]; then
+    if "${CC:-gcc}" -o "$CDE_PREFIX/bin/cde-confirm" "$PROJECT_ROOT/tools/cde-confirm.c" \
+            -I"$CDE_PREFIX/dt/include" -I"$CDE_PREFIX/include" -I/usr/include/tirpc \
+            -L"$CDE_PREFIX/dt/lib" -L"$CDE_PREFIX/lib" \
+            -lXm -lXt -lX11 \
+            -Wl,-rpath,"$CDE_PREFIX/lib:$CDE_PREFIX/dt/lib" 2>/dev/null; then
+        ok "installed cde-confirm (logout confirmation)"
+    else
+        warn "could not build cde-confirm; logout will not ask for confirmation"
+    fi
+fi
+
 # Root-menu helpers: "Restart Workspace Manager..." and "Log out...".
 for h in cde-restart-dtwm.sh cde-logout.sh cde-toggle-frontpanel.sh cde-wsm-backdrop.sh cde-motif-apply.sh cde-session-save.sh cde-session-restore.sh; do
     [ -f "$PROJECT_ROOT/scripts/$h" ] || continue

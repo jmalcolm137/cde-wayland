@@ -48,7 +48,10 @@ What runs today:
   titlebar menus are provided as CoW menus. Plan and protocol notes:
   [docs/WORKSPACE-MANAGER.md](docs/WORKSPACE-MANAGER.md).
 * **Style Manager** — Backdrop (per workspace), Keyboard (auto-repeat, shared
-  with every client), Font, Startup and Color modules are wired to the session.
+  with every client), Font, Color and Startup modules are wired to the session:
+  Startup's "Resume current session"/"Return to Home session" picks which store
+  is replayed, "Set Home Session…" saves the running session as home, and the
+  "Logout Confirmation Dialog" choice gates the dialog `cde-logout` shows.
 * **Application Manager** — `dtappgather` gathers CDE's application groups
   (Desktop_Apps, Desktop_Tools, Information, System_Admin, ...) and their
   entries show as action icons, so a File Manager double-click works.
@@ -180,9 +183,10 @@ scripts/run-app.sh dtcalc
   link, and spawns an X server to host its greeter — which does not fit an
   architecture where every client has a private root. A Wayland-hosted greeter
   reusing `dtgreet` is the realistic shape.
-* **Style Manager → Startup.** "Resume current session", "Return to Home
-  session" and "Set Home Session…" are inert; save/restore is the Wayland-side
-  process marker only, with no window geometry or desk recorded.
+* **Session restore fidelity.** The Style Manager's Startup module now picks the
+  store (`current`/`home`), sets the home session and gates the logout
+  confirmation, but what is saved is still the Wayland-side process marker: no
+  window geometry or desk is recorded.
 * **Input methods.** Only `ibus-engine-simple` is installed — the XIM bridge
   works, but there is no real engine (pinyin, …) to compose with.
 * **Mailer.** `dtmail` wants a setgid `mail` group (or a non-spool mailbox); a
@@ -210,6 +214,7 @@ pristine source is never touched.
 | `dtappgather-target.patch` | let `dtappgather` gather into a writable directory |
 | `dtsvc-logfiles-top.patch` | allow `CDE_LOGFILES_TOP` from the environment (`dtspcd`) |
 | `dtsvc-backdrop.patch` | run `cde-wsm-backdrop` when the Style Manager changes the backdrop |
+| `dtstyle-startup.patch` | record the Style Manager Startup choices where the Wayland session and `cde-logout` can read them, and save the home session Wayland-side |
 | `dtsession-vfork-exit.patch` | `_exit` in `vfork` children (libpixman destructor crash) |
 | `dtwm-subpanel-unpost.patch` | unmap a sub-panel instead of `CallWmFunction(F_Kill)` |
 | `dtwm-wsm-desk.patch`, `dtwm-wsm-list.patch` | drive and read CoW's desks from dtwm |

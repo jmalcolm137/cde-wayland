@@ -98,8 +98,22 @@ export XKB_DEFAULT_VARIANT="${CDE_XKB_VARIANT-intl}"
 # other clients; the session is instead captured on the Wayland/Linux side, from
 # the processes that carry these markers (see scripts/cde-session-save.sh).
 # Every application launched by the session inherits them.
+#
+# The Style Manager's Startup module records "Resume current session" / "Return
+# to Home session" in $CDE_STARTUP_PREF instead of telling dtsession: there is no
+# shared X server for its session-manager messages to travel over.  That choice
+# selects which store is replayed here.
+export CDE_SESSION_ROOT="${CDE_SESSION_ROOT:-${XDG_STATE_HOME:-$HOME/.local/state}/cde-wayland/sessions}"
+export CDE_STARTUP_PREF="${CDE_STARTUP_PREF:-$CDE_SESSION_ROOT/startup}"
+if [ -z "${CDE_SESSION_TYPE:-}" ] && [ -r "$CDE_STARTUP_PREF" ]; then
+    case "$(sed -n '1p' "$CDE_STARTUP_PREF" 2>/dev/null)" in
+        home)    CDE_SESSION_TYPE=home ;;
+        current) CDE_SESSION_TYPE=current ;;
+    esac
+fi
 export CDE_SESSION_TYPE="${CDE_SESSION_TYPE:-current}"
 export CDE_SESSION_TAG="${CDE_SESSION_TAG:-cde-wayland-session}"
 # Kept out of ~/.dt/sessions: that directory belongs to dtsession, which
 # recreates it from its own (XSMP) session data on every start.
-export CDE_SESSION_DIR="${CDE_SESSION_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/cde-wayland/sessions/$CDE_SESSION_TYPE}"
+export CDE_SESSION_DIR="${CDE_SESSION_DIR:-$CDE_SESSION_ROOT/$CDE_SESSION_TYPE}"
+mkdir -p "$CDE_SESSION_ROOT" 2>/dev/null || true

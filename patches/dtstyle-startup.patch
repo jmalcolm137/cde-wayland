@@ -1,0 +1,174 @@
+dtstyle: honour Style Manager Startup choices in the Wayland session
+
+Each CDE client here is its own X server, so the ClientMessages the Startup
+module sends to dtsession are never delivered: "Resume current session" /
+"Return to Home session" had no effect, "Set Home Session..." saved an XSMP
+session that nothing restores, and the "Logout Confirmation Dialog" choice went
+nowhere.  Record the choices in $CDE_STARTUP_PREF -- the file config/cde-env.sh
+reads to pick the session store and cde-logout reads to decide whether to ask --
+and run the Wayland-side save into the home store when the home session is set.
+--- a/programs/dtstyle/Startup.c
++++ b/programs/dtstyle/Startup.c
+@@ -44,6 +44,10 @@
+ #include <X11/Xlib.h>
+ #include <Xm/MwmUtil.h>
+ #include <errno.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <unistd.h>
+ 
+ #include <Xm/Xm.h>
+ #include <Xm/XmP.h>
+@@ -131,6 +135,115 @@
+ 
+ 
+ /*+++++++++++++++++++++++++++++++++++++++*/
++/* cde-wayland session preferences       */
++/*+++++++++++++++++++++++++++++++++++++++*/
++/*
++ * There is no shared X server in this environment: each client is its own X
++ * server, so the session-manager messages this module sends to dtsession are
++ * never delivered.  The two settings are instead recorded in a file that the
++ * Wayland-side session reads (config/cde-env.sh selects the session store, and
++ * cde-logout consults the confirmation choice), and "Set Home Session" runs the
++ * Wayland-side save with the home store selected.
++ */
++static const char *
++cdeStartupPref( void )
++{
++    const char *p = getenv("CDE_STARTUP_PREF");
++    return (p && *p) ? p : NULL;
++}
++
++/* Which session the next login resumes; "current" when nothing is recorded. */
++static int
++cdeReadStartState( void )
++{
++    const char *path = cdeStartupPref();
++    char buf[32];
++    FILE *fp;
++
++    if (path != NULL && (fp = fopen(path, "r")) != NULL)
++    {
++        if (fgets(buf, sizeof buf, fp) != NULL)
++        {
++            fclose(fp);
++            return (strncmp(buf, "home", 4) == 0) ?
++                DtSM_HOME_STATE : DtSM_CURRENT_STATE;
++        }
++        fclose(fp);
++    }
++    return DtSM_CURRENT_STATE;
++}
++
++/* Whether logging out asks for confirmation; quiet when nothing is recorded. */
++static int
++cdeReadConfirmMode( void )
++{
++    const char *path = cdeStartupPref();
++    char buf[32], mode[32];
++    FILE *fp;
++
++    if (path != NULL && (fp = fopen(path, "r")) != NULL)
++    {
++        if (fgets(buf, sizeof buf, fp) != NULL &&
++            fgets(mode, sizeof mode, fp) != NULL)
++        {
++            fclose(fp);
++            return (strncmp(mode, "on", 2) == 0) ?
++                DtSM_VERBOSE_MODE : DtSM_QUIET_MODE;
++        }
++        fclose(fp);
++    }
++    return DtSM_QUIET_MODE;
++}
++
++static void
++cdeWriteStartup( int startState, int confirmMode )
++{
++    const char *path = cdeStartupPref();
++    FILE *fp;
++
++    if (path == NULL || (fp = fopen(path, "w")) == NULL)
++        return;
++    fputs((startState == DtSM_HOME_STATE) ? "home\n" : "current\n", fp);
++    fputs((confirmMode == DtSM_VERBOSE_MODE) ? "on\n" : "off\n", fp);
++    fclose(fp);
++}
++
++static void
++cdeSaveHomeSession( void )
++{
++    const char *pref = cdeStartupPref();
++    const char *helper;
++    char dir[4096];
++    char cmd[8192];
++    char *cut;
++
++    /*
++     * The preference lives in the sessions directory; the home store is its
++     * "home" sibling.  The save itself is a shell helper so the process marker
++     * logic stays in one place.
++     */
++    if (pref == NULL || strlen(pref) + 8 >= sizeof dir)
++        return;
++    strcpy(dir, pref);
++    cut = strrchr(dir, '/');
++    if (cut == NULL)
++        return;
++    strcpy(cut + 1, "home");
++    helper = getenv("CDE_SESSION_SAVE_HELPER");
++    if (helper == NULL || *helper == '\0')
++        helper = "cde-session-save.sh";
++    if (fork() == 0) {
++        setsid();
++        setenv("CDE_SESSION_TYPE", "home", 1);
++        setenv("CDE_SESSION_DIR", dir, 1);
++        snprintf(cmd, sizeof cmd, "%s", helper);
++        execl("/bin/sh", "sh", "-c", cmd, (char *)NULL);
++        _exit(127);
++    }
++}
++
++
++/*+++++++++++++++++++++++++++++++++++++++*/
+ /* popup_startupBB                       */
+ /*+++++++++++++++++++++++++++++++++++++++*/
+ void 
+@@ -183,8 +296,14 @@
+ static void
+ GetStartupValues( void )
+ {
+-    startup.origStartState = style.smState.smStartState;
+-    startup.origConfirmMode = style.smState.smConfirmMode;
++    /*
++     * cde-wayland: the shared session-manager state is never updated in this
++     * environment, so show the choice the Wayland-side session will honour.
++     */
++    startup.origStartState = cdeReadStartState();
++    startup.origConfirmMode = cdeReadConfirmMode();
++    style.smState.smStartState = startup.origStartState;
++    style.smState.smConfirmMode = startup.origConfirmMode;
+ }
+ 
+ 
+@@ -532,6 +651,9 @@
+         XtPointer call_data )
+ {
+     SmSaveHomeSession(startup.origStartState, startup.origConfirmMode);    
++    /* cde-wayland: dtsession cannot reach the other clients, so also save the
++     * running session into the home store the Wayland-side session restores. */
++    cdeSaveHomeSession();
+ }
+ 
+ 
+@@ -601,6 +723,8 @@
+ 	    startup.origConfirmMode = DtSM_QUIET_MODE;
+ 
+           SmNewStartupSettings();
++	  /* cde-wayland: record the choices for the Wayland-side session. */
++	  cdeWriteStartup(style.smState.smStartState, style.smState.smConfirmMode);
+           break;
+ 
+       case CANCEL_BUTTON:
