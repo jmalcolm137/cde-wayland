@@ -44,6 +44,10 @@ if [ "$_has_moocow" = 1 ]; then
             line=$(awk -v i="$idx" '$1 == i { print; exit }' "$_conf" 2>/dev/null)
             colour=$(printf '%s\n' "$line" | awk '{ print $2 }')
             image=$(printf '%s\n' "$line" | awk '{ print $3 }')
+            # Allow the configured path to be relative to the CDE root.
+            case "$image" in
+                '$CDE_ROOT'*) image="${CDE_ROOT:-/usr/dt}${image#\$CDE_ROOT}" ;;
+            esac
             [ -n "$colour" ] && moocow set output.colour.background "$colour" >/dev/null 2>&1
             if [ -n "$image" ]; then
                 moocow set output.image.background "$image" >/dev/null 2>&1

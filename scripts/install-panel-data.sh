@@ -323,6 +323,43 @@ if [ -d "$CDE_BUILD/programs/backdrops" ]; then
         cp -f "$f" "$HOME/.dt/backdrops/$(basename "$f" .pm).xpm"
         cp -f "$f" "$CDE_ROOT/backdrops/$(basename "$f" .pm).xpm"
     done
+    # Several CDE backdrops use '\' as a colour symbol, which CoW's XPM parser
+    # cannot unescape ("invalid escape sequence").  Convert them to PNG, which
+    # CoW reads natively; cde-wsm-backdrop prefers the .png.
+    _conv=""
+    if command -v magick >/dev/null 2>&1; then _conv=magick
+    elif command -v convert >/dev/null 2>&1; then _conv=convert; fi
+    if [ -n "$_conv" ]; then
+        _n=0
+        for f in "$CDE_BUILD/programs/backdrops"/*.pm \
+                 "$CDE_BUILD/programs/backdrops"/*.bm; do
+            [ -f "$f" ] || continue
+            _b="$(basename "$f")"; _b="${_b%.*}"
+            # A few backdrops are 8px-wide gradients (SkyLight, SkyDark,
+            # Convex, Concave) meant to be stretched, not tiled: tiled, their
+            # horizontal dither shows as stripes.  Flatten each row to its
+            # average and widen the tile so it reads as a smooth gradient.
+            # Real tiles start at ~28px (PinStripe), so 16 is a safe cutoff.
+            _w="$("$_conv" identify -format '%w' "$f" 2>/dev/null)"
+            _h="$("$_conv" identify -format '%h' "$f" 2>/dev/null)"
+            for d in "$HOME/.dt/backdrops" "$CDE_ROOT/backdrops"; do
+                _png="$d/$_b.png"
+                # Always reconvert: it is cheap and keeps the PNGs in step with
+                # the conversion below.
+                if [ -n "$_w" ] && [ -n "$_h" ] && [ "$_w" -lt 16 ]; then
+                    "$_conv" "$f" -colorspace Gray \
+                        -resize "1x${_h}!" -resize "1920x${_h}!" \
+                        "$_png" 2>/dev/null || rm -f "$_png"
+                else
+                    "$_conv" "$f" "$_png" 2>/dev/null || rm -f "$_png"
+                fi
+            done
+            _n=$((_n + 1))
+        done
+        ok "converted $_n backdrops to PNG for CoW"
+    else
+        warn "no ImageMagick; backdrops that use a '\\' colour symbol will not load"
+    fi
     if [ -s "$CDE_BUILD/programs/dtstyle/Backdrops" ]; then
         strip_nls "$CDE_BUILD/programs/dtstyle/Backdrops" \
             > "$HOME/.dt/backdrops/desc.backdrops"

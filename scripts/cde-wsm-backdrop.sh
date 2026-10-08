@@ -20,12 +20,14 @@ mkdir -p "$state_dir" 2>/dev/null || true
 printf '%s\n' "$path" >> "$state_dir/backdrop.calls" 2>/dev/null || true
 
 # dtstyle passes just the bitmap name (no directory, often no extension);
-# resolve it against the backdrop directories, preferring the .xpm CoW needs.
+# resolve it against the backdrop directories, preferring the PNG that
+# install-panel-data.sh generates (some CDE XPMs use a '\' colour symbol that
+# CoW cannot parse).
 if [ ! -f "$path" ]; then
     base="$path"
     found=""
     for d in "${CDE_ROOT:-/usr/dt}/backdrops" "$HOME/.dt/backdrops"; do
-        for ext in .xpm .pm .png .svg; do
+        for ext in .png .xpm .pm .svg; do
             if [ -f "$d/$base$ext" ]; then found="$d/$base$ext"; break 2; fi
         done
         if [ -f "$d/$base" ]; then found="$d/$base"; break; fi
@@ -38,10 +40,13 @@ idx="${idx:-0}"
 
 command -v moocow >/dev/null 2>&1 || exit 0
 
-# CDE's .pm backdrops are XPM format but CoW only accepts the .xpm extension;
-# install-panel-data.sh keeps a .xpm copy alongside each .pm.
+# CDE's .pm backdrops are XPM; install-panel-data.sh keeps a .png copy
+# alongside each (CoW cannot parse the XPMs that use a '\' colour symbol).
 case "$path" in
-    *.pm) [ -f "${path%.pm}.xpm" ] && path="${path%.pm}.xpm" ;;
+    *.pm|*.xpm)
+        for _p in "${path%.*}.png" "$path"; do
+            [ -f "$_p" ] && { path="$_p"; break; }
+        done ;;
 esac
 
 case "$path" in
