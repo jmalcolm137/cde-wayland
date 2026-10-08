@@ -13,6 +13,16 @@ Run the **Common Desktop Environment** natively on Wayland:
 See [DESIGN.md](DESIGN.md) for the architecture, the constraints of an
 in-process Xlib, the CDE component strategy, and the milestone plan.
 
+## Demo
+
+![The CDE desktop on Wayland](docs/demo.gif)
+
+The Workspace Menu starts the Terminal, `dtcalc` is launched from it, the File
+Manager opens a text file on a double-click, and dragging `pic2.xpm` onto the
+Front Panel's Icon Editor launches `dticon`. The same clip as MP4:
+[docs/demo.mp4](docs/demo.mp4). Recorded from a live session with
+[`scripts/demo-record.sh`](scripts/demo-record.sh).
+
 ## Where changes live
 
 `xlib-wayland` is a **separate upstream project** and is where every shim
