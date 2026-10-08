@@ -57,6 +57,71 @@ n2=$(count)
 say "after delete: n=$n2"
 [ "$n2" -eq "$n0" ] || { say "FAIL: delete did not restore the workspace list"; fail=1; }
 
+# A CDE client's own rendering.  The File Manager draws its icons through a
+# clip mask, so a clip/damage regression in the shim leaves its body blank while
+# every other check still passes -- xlib-wayland 5e5c051 ("implement clip
+# masks") did exactly that, and it then also broke double-click because the
+# stalled repaint outran DtIconGadget's multi-click timer.  Open a File Manager
+# on a directory with entries and check its body actually paints.
+if command -v moocow >/dev/null 2>&1 && command -v grim >/dev/null 2>&1 \
+   && command -v python3 >/dev/null 2>&1; then
+    _d=$(mktemp -d)
+    : >"$_d/one" ; : >"$_d/two" ; : >"$_d/three"
+    moocow exec /bin/sh -c "cd '$_d' && dtfile" >>"$log" 2>&1
+    sleep 4
+    # A resize forces a full expose; the 5e5c051 regression left the icons
+    # unpainted after one, so paint the window and then look at it.
+    _id=$(moocow show -a window 2>/dev/null | python3 -c '
+import json,sys
+for w in json.load(sys.stdin)["data"]:
+    if w["app_id"].startswith("File Manager"):
+        print(w["id"]); break' 2>/dev/null)
+    if [ -n "$_id" ]; then
+        moocow focus -i "$_id" >/dev/null 2>&1
+        moocow window-resize -w 600 -h 400 >/dev/null 2>&1
+        sleep 2
+    fi
+    _shot=$(mktemp --suffix=.png)
+    grim -t png "$_shot" >/dev/null 2>&1
+    _n=$(python3 - "$_shot" 2>>"$log" <<'PY'
+import json, subprocess, sys
+try:
+    from PIL import Image
+except Exception:
+    print(-1); raise SystemExit
+try:
+    im = Image.open(sys.argv[1]).convert("RGB")
+    out = subprocess.run(["moocow", "show", "-a", "window"],
+                         capture_output=True, text=True).stdout
+    for w in json.loads(out)["data"]:
+        if w["app_id"].startswith("File Manager"):
+            x, y, ww, hh = w["x"], w["y"], w["width"], w["height"]
+            body = im.crop((x + 8, y + 60, x + ww - 8, y + hh - 30))
+            cols = body.getcolors(maxcolors=1 << 20) or []
+            print(sum(n for n, _ in cols) and len(cols))
+            break
+    else:
+        print(-1)
+except Exception as e:
+    print(-1)
+PY
+)
+    rm -f "$_shot"; rm -rf "$_d"
+    case "$_n" in
+        ''|*[!0-9]*) _n=-1 ;;
+    esac
+    if [ "$_n" = -1 ]; then
+        say "render: skipped (no File Manager window or no Pillow)"
+    elif [ "$_n" -lt 4 ]; then
+        say "render: FAIL: the File Manager body is blank ($_n colours); a shim clip/damage regression?"
+        fail=1
+    else
+        say "render: the File Manager body paints ($_n colours)"
+    fi
+else
+    say "render: skipped (moocow/grim/python3 not available)"
+fi
+
 if [ "$fail" -eq 0 ]; then
     say "PASS"
 else
