@@ -101,6 +101,12 @@ if command -v dtwm >/dev/null 2>&1; then
     if command -v cde-wsm-desk >/dev/null 2>&1; then
         cde-wsm-desk 0 &
     fi
+    # Follow a palette chosen in the Style Manager: clients read their resources
+    # once, so restart the panel when dtsession republishes the palette (see
+    # scripts/cde-palette-watch.sh).
+    if command -v cde-palette-watch >/dev/null 2>&1; then
+        cde-palette-watch &
+    fi
 else
     log "error: dtwm not found; run scripts/install-panel-data.sh"
 fi

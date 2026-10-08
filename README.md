@@ -58,9 +58,15 @@ What runs today:
 * **Colour** — dtsession's colour server publishes the CDE palette as
   `RESOURCE_MANAGER` and the shim relays that property between clients, so
   applications take CDE's real colours (`Default.dp` colour set 4, `#c6b2a8` on
-  a TrueColor display) rather than a hard-coded approximation; a palette applied
-  in the Style Manager takes effect at the next session, as CDE's own notice
-  says. Window frames are still CoW's (see *What's left*).
+  a TrueColor display) rather than a hard-coded approximation. A palette chosen
+  in the Style Manager is followed by the Front Panel: `cde-palette-watch` sees
+  the relayed palette change, then restarts the colour server and the panel (the
+  colour server caches the pixel set Motif's colour object fetches, so
+  restarting the panel alone is not enough). Applications keep their colours and
+  pick the palette up the next time they start — CDE's own behaviour on a
+  display without dynamic colour, where its Style Manager says the change
+  "will take effect at your next session". Window frames are still CoW's (see
+  *What's left*).
 * **Desktop** — per-workspace CDE backdrops (the Sun logo on workspace 0, then
   WaterDrops / RicePaper / Pebbles) and MWM-style cascading placement.
 * **Drag and drop** — Motif DnD is bridged through the compositor's drag and the

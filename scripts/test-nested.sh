@@ -16,6 +16,7 @@ LOG="${CDE_TEST_LOG:-/tmp/cde-wayland-test.log}"
 SMOKE_LOG="${CDE_WSM_SMOKE_LOG:-/tmp/cde-wsm-smoke.log}"
 
 if [ "${1:-}" = "--stop" ]; then
+    pkill -f 'bin/cde-palette-watch' 2>/dev/null || true
     pkill -x dtsession 2>/dev/null || true
     pkill -x dtwm 2>/dev/null || true
     pkill -x cow 2>/dev/null || true

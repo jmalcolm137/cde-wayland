@@ -31,6 +31,9 @@ if command -v cde-session-save.sh >/dev/null 2>&1; then
     cde-session-save.sh >/dev/null 2>&1 || true
 fi
 
+# The palette watcher restarts dtsession and dtwm; it must not outlive the
+# session, or it would interfere with the next one.
+pkill -f 'bin/cde-palette-watch' 2>/dev/null
 pkill -x dtsession 2>/dev/null
 pkill -x dtwm      2>/dev/null
 pkill -x rpc.cmsd  2>/dev/null
