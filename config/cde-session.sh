@@ -68,6 +68,26 @@ else
     log "warning: dtsession not found; the Startup/Color modules will be limited"
 fi
 
+# Clients read their resource database when they start, and dtsession's colour
+# server publishes the CDE palette as RESOURCE_MANAGER only once it is up, so
+# anything started immediately after dtsession would miss it.  Wait for the
+# shim's shared-property store to carry the palette before bringing up the
+# panel (bounded, and skipped when the property is not being relayed).
+case ",${XLIB_WAYLAND_SHARE_PROPERTIES-}," in
+    *,RESOURCE_MANAGER,*)
+        _shp="${XDG_RUNTIME_DIR:-/tmp}/xlib-wayland/smprops"
+        _waited=0
+        while [ "$_waited" -lt 100 ]; do
+            grep -q '^RESOURCE_MANAGER' "$_shp" 2>/dev/null && break
+            sleep 0.1
+            _waited=$((_waited + 1))
+        done
+        if [ "$_waited" -ge 100 ]; then
+            log "warning: no CDE palette after 10s; clients use the fallback colours"
+        fi
+        ;;
+esac
+
 # The CDE Front Panel (real dtwm, contained).  dtwm skips its own ToolTalk
 # messaging: registering as the workspace/window manager is wrong here (CoW is
 # the WM) and it stopped the Front Panel from being created.

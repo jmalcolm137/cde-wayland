@@ -55,6 +55,12 @@ What runs today:
 * **Application Manager** — `dtappgather` gathers CDE's application groups
   (Desktop_Apps, Desktop_Tools, Information, System_Admin, ...) and their
   entries show as action icons, so a File Manager double-click works.
+* **Colour** — dtsession's colour server publishes the CDE palette as
+  `RESOURCE_MANAGER` and the shim relays that property between clients, so
+  applications take CDE's real colours (`Default.dp` colour set 4, `#c6b2a8` on
+  a TrueColor display) rather than a hard-coded approximation; a palette applied
+  in the Style Manager takes effect at the next session, as CDE's own notice
+  says. Window frames are still CoW's (see *What's left*).
 * **Desktop** — per-workspace CDE backdrops (the Sun logo on workspace 0, then
   WaterDrops / RicePaper / Pebbles) and MWM-style cascading placement.
 * **Drag and drop** — Motif DnD is bridged through the compositor's drag and the
@@ -191,9 +197,15 @@ scripts/run-app.sh dtcalc
   works, but there is no real engine (pinyin, …) to compose with.
 * **Mailer.** `dtmail` wants a setgid `mail` group (or a non-spool mailbox); a
   packaging item.
-* **Colour.** Applying a palette in the Style Manager changes little: TrueColor
-  plus cairo bypass the colour-server allocation model `InitializeDtcolor`
-  implements.
+* **Window frames ignore the palette.** Client colours come from CDE's palette
+  (see below), but the frames and titlebars are CoW's, configured in
+  `config/cow.conf`: CoW is not an X client and never sees `RESOURCE_MANAGER`, so
+  its colours are still hand-picked and do not follow a Style Manager change.
+* **CDE's own `sys.resources` is never applied.** `programs/dtsession` builds it
+  with a `$(CPP)` rule that has no value in the generated Makefile, so the
+  installed file is empty; `dtsession_res` would merge it, but it shells out to
+  `xrdb`, which is not installed either. The one setting that matters here
+  (`*ColorUse`) therefore lives in `config/Xresources`.
 * **Odds and ends.** The Front Panel's own **Lock** control does not fire under
   CoW (the Workspace Menu's *Lock Screen* works); the Workspace Menu's *Refresh*
   has no WSM equivalent; the `.bm` (X bitmap) backdrops have no PNG, so selecting

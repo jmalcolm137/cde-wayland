@@ -84,7 +84,13 @@ export XLIB_WAYLAND_SHARE_SELECTIONS="${XLIB_WAYLAND_SHARE_SELECTIONS-Customize 
 # Manager reads them (and warns about screen-saver settings without them).  Each
 # shim process has its own root, so the shim republishes the named properties
 # (xlib-wayland src/xlib/smprops.c).
-export XLIB_WAYLAND_SHARE_PROPERTIES="${XLIB_WAYLAND_SHARE_PROPERTIES-_DT_SM_}"
+#
+# RESOURCE_MANAGER belongs here too: dtsession's colour server publishes the CDE
+# palette as *background / *foreground on it (SrvPalette.c -> _DtAddToResource),
+# which is how a real CDE session gets its colours.  Relaying the property lets
+# every client merge that palette instead of falling back to the approximation in
+# config/Xresources.
+export XLIB_WAYLAND_SHARE_PROPERTIES="${XLIB_WAYLAND_SHARE_PROPERTIES-_DT_SM_,RESOURCE_MANAGER}"
 
 # Keyboard layout.  Applications take their X keymap from the compositor; when
 # it has no physical keyboard (the nested test session) the shim builds one from

@@ -1,20 +1,36 @@
 ! CDE-on-Wayland X resources.
 !
-! The shim publishes the root RESOURCE_MANAGER property from the user's
-! ~/.Xresources / ~/.Xdefaults, or from $XENVIRONMENT.  cde-session.sh points
-! XENVIRONMENT here when the user has no resources of their own, so CDE Motif
-! programs get a CDE-ish default look without a running X server.
+! The shim publishes the root RESOURCE_MANAGER property for every client, from
+! the standard files plus, when it is relayed, the palette dtsession's colour
+! server publishes (see config/cde-env.sh).  config/river-init points
+! XENVIRONMENT here when the user has no resources of their own, and cde-session
+! installs a copy where the shim looks for it regardless of the environment, so
+! CDE programs get CDE's defaults without a running X server.
 !
-! This is a starting point; the real palette will come from CDE's own
-! resources as dtstyle/backdrops are wired up.
+! What remains here is what CDE would otherwise supply through its own
+! config/$LANG/sys.resources and app-defaults: some font choices, the colour-set
+! selection, and per-application resources.
 
 *customization:		-color
 
-! CDE's default "grey" workspace and black text.
+! Colours come from CDE's colour server: dtsession publishes the palette as
+! *background / *foreground in RESOURCE_MANAGER, the shim relays that property
+! between clients (config/cde-env.sh) and merges it after these files, so the
+! palette wins on conflicting resources.
+!
+! *ColorUse chooses which colour set dtsession picks.  CDE's own sys.resources
+! sets HIGH_COLOR, which makes it use set 4 of Default.dp (#c6b2a8) on a
+! TrueColor display; without it the value is DEFAULT (4), which matches none of
+! the XmCO_* cases and silently falls back to MEDIUM_COLOR (#999999 with a white
+! foreground).  CDE's generated sys.resources is empty in this build, so the
+! setting has to live here.
+*ColorUse:		HIGH_COLOR
+
+! Fallbacks for a client that starts before the colour server has published the
+! palette (the panel is held back until it has, see config/cde-session.sh).
+! These are class resources, so the palette's *background / *foreground win.
 *Background:		#aeb2c3
 *Foreground:		#000000
-*highlightColor:	#aeb2c3
-*armColor:		#aeb2c3
 
 ! A readable proportional and fixed font; the shim matches these XLFDs through
 ! fontconfig and never fails to load a font.
@@ -30,17 +46,10 @@
 *userFont: -misc-fixed-medium-r-normal--14-*-*-*-*-*-iso8859-1:
 *userBoldFont: -misc-fixed-bold-r-normal--14-*-*-*-*-*-iso8859-1:
 
-! Motif widget colours close to the CDE defaults.
-*XmList.selectColor:		#0f3977
-*XmList.selectBackground:	#0f3977
-*XmPushButton.background:	#aeb2c3
-*XmPushButton.foreground:	#000000
-*XmToggleButton.selectColor:	#0f3977
-! CDE draws almost every button with the *gadget* classes.  Motif derives a
-! gadget's select colour from the background unless the class is named here, so
-! a radio box's selected diamond was filled with the background and looked
-! unselected (the state was correct all along).
-*XmToggleButtonGadget.selectColor:	#0f3977
+! Motif derives the highlight, shadow and select colours from the palette
+! background, so nothing is pinned here any more: the old hand-picked values
+! (highlightColor == background, a blue selectColor) were what made gadget radio
+! indicators invisible and forced a blue selection onto a CDE palette.
 
 ! The Style Manager - Font dialog matches the current *systemFont against its
 ! Dtstyle*SystemFont1..7 list (14-pt Helvetica by default).  Set the system
