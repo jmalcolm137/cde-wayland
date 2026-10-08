@@ -26,6 +26,15 @@
 ! setting has to live here.
 *ColorUse:		HIGH_COLOR
 
+! The palette the colour server starts with.  ColorPalette is a per-screen
+! resource -- the colour server's shells are named after the screen number, and
+! it publishes *<screen>*ColorPalette -- so the instance is 0.  Once a palette
+! has been chosen in the Style Manager, the palette relayed through the shared
+! property store (merged after these files) carries its own *0*ColorPalette and
+! wins, so this is only the starting point.  Without it dtsession falls back to
+! Default.dp on a colour display.
+*0*ColorPalette:	Broica.dp
+
 ! No *Background / *Foreground fallback here on purpose.  In CDE the colour
 ! server's publication is the only source of the desktop colours, and a
 ! class-level fallback of ours would sit in front of the palette's *background /
@@ -67,3 +76,7 @@
 ! separately by cde-session.sh.  Without this dtsession forks a second dtwm,
 ! which fights the contained panel over the Workspace Manager protocol.
 Dtsession*wmStartupCommand:	/bin/true
+
+! The compositor + shim round-trip can make a synthetic double-click slower than
+! CDE's 500 ms default; allow more so double-click-to-open works.
+*multiClickTime:	1500

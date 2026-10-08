@@ -269,6 +269,47 @@ if ls "$TYPES_DIR"/*.dt >/dev/null 2>&1; then
         # are "not found".
         cp "$CDE_ROOT/appconfig/types/C/$b" "$CDE_ROOT/appconfig/types/$b"
     done
+
+    # cpp joins *.dt.src backslash continuations, so a field whose value spans
+    # lines (a multi-word DESCRIPTION, an EXEC_STRING split over lines) arrives
+    # as one line with the continuation indentation embedded as a long run of
+    # spaces.  CDE's .dt reader then reads the words after that run as field
+    # names ("contains the following unrecognized field name and value:
+    # \"Cannot\"...") and rejects the action -- the File Manager's double-click
+    # then resolves no action.  Re-wrap every such run onto its own continuation
+    # line, then assert it (scripts/test-dt-database.sh) so a build regression
+    # cannot get as far as a session.
+    python3 - "$CDE_ROOT/appconfig/types/C" "$CDE_ROOT/appconfig/types" <<'PY'
+import glob, os, re, sys
+field = re.compile(r'^(\s*)([A-Za-z_][A-Za-z0-9_]*)(\s+)(.*)$')
+for d in sys.argv[1:]:
+    for f in glob.glob(os.path.join(d, '*.dt')):
+        out, n = [], 0
+        for ln in open(f, encoding='utf-8', errors='replace').read().split('\n'):
+            if ln.lstrip().startswith('#') or not ln.strip():
+                out.append(ln); continue
+            m = field.match(ln)
+            if m:
+                indent, name, align, val = m.groups(); prefix = indent + name + align
+            else:
+                indent = re.match(r'^(\s*)', ln).group(1)
+                val, prefix = ln.lstrip(), indent
+            parts = re.split(r'( {8,})', val)
+            if len(parts) > 1:
+                rebuilt = parts[0]
+                for i in range(1, len(parts), 2):
+                    rebuilt += ' \\\n' + indent + '        ' + parts[i + 1].lstrip()
+                    n += 1
+                out.append(prefix + rebuilt)
+            else:
+                out.append(ln)
+        if n:
+            open(f, 'w', encoding='utf-8').write('\n'.join(out))
+PY
+    if [ -x "$SCRIPT_DIR/test-dt-database.sh" ]; then
+        "$SCRIPT_DIR/test-dt-database.sh" "$CDE_ROOT/appconfig/types/C" \
+            || die "the generated .dt database still has cpp-joined continuations"
+    fi
     # The Front Panel's Lock and Exit controls are ToolTalk requests to the
     # session manager (Display_Lock / XSession_Exit).  dtsession runs, but its
     # in-process lock just covers its own private X server and its logout flow

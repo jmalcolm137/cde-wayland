@@ -1,0 +1,67 @@
+/* vdclick — inject a double-click via zwlr_virtual_pointer.
+ *
+ * Usage: vdclick X Y [GAP_MS]
+ *
+ * Motion to (X,Y), then two press/release pairs.  Events are only flushed
+ * between steps (a roundtrip mid-sequence can block for seconds and push the
+ * second click past the multi-click timeout). */
+#include <wayland-client.h>
+#include <linux/input.h>
+#include "vptr.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+static struct zwlr_virtual_pointer_manager_v1 *mgr = NULL;
+static struct wl_seat *seat = NULL;
+static void reg_global(void *d, struct wl_registry *r, uint32_t name,
+                       const char *iface, uint32_t ver) {
+    (void)d; (void)ver;
+    if (!strcmp(iface, zwlr_virtual_pointer_manager_v1_interface.name))
+        mgr = wl_registry_bind(r, name, &zwlr_virtual_pointer_manager_v1_interface, 2);
+    else if (!strcmp(iface, wl_seat_interface.name) && !seat)
+        seat = wl_registry_bind(r, name, &wl_seat_interface, 1);
+}
+static void reg_remove(void *d, struct wl_registry *r, uint32_t n) { (void)d;(void)r;(void)n; }
+static const struct wl_registry_listener rl = { reg_global, reg_remove };
+
+int main(int argc, char **argv) {
+    if (argc < 3) { fprintf(stderr, "usage: %s X Y [GAP_MS]\n", argv[0]); return 2; }
+    int x = atoi(argv[1]), y = atoi(argv[2]);
+    int gap = argc > 3 ? atoi(argv[3]) : 80;
+    int w = 1280, h = 720;
+    uint32_t btn = BTN_LEFT;
+    const char *b = getenv("VCLICK_BTN");
+    if (b && !strcmp(b, "right")) btn = BTN_RIGHT;
+    else if (b && !strcmp(b, "middle")) btn = BTN_MIDDLE;
+
+    struct wl_display *dpy = wl_display_connect(NULL);
+    if (!dpy) { fprintf(stderr, "no display\n"); return 1; }
+    struct wl_registry *reg = wl_display_get_registry(dpy);
+    wl_registry_add_listener(reg, &rl, NULL);
+    wl_display_roundtrip(dpy);
+    if (!mgr) { fprintf(stderr, "no virtual pointer manager\n"); return 1; }
+    struct zwlr_virtual_pointer_v1 *vp =
+        zwlr_virtual_pointer_manager_v1_create_virtual_pointer(mgr, seat);
+
+    zwlr_virtual_pointer_v1_motion_absolute(vp, 0, x, y, w, h);
+    zwlr_virtual_pointer_v1_frame(vp);
+    wl_display_flush(dpy);
+    usleep(150000);
+
+    for (int i = 0; i < 2; i++) {
+        zwlr_virtual_pointer_v1_button(vp, 0, btn, WL_POINTER_BUTTON_STATE_PRESSED);
+        zwlr_virtual_pointer_v1_frame(vp);
+        wl_display_flush(dpy);
+        usleep(15000);
+        zwlr_virtual_pointer_v1_button(vp, 0, btn, WL_POINTER_BUTTON_STATE_RELEASED);
+        zwlr_virtual_pointer_v1_frame(vp);
+        wl_display_flush(dpy);
+        if (i == 0) usleep((useconds_t)gap * 1000);
+    }
+    wl_display_flush(dpy);
+    usleep(100000);
+    wl_display_disconnect(dpy);
+    return 0;
+}
