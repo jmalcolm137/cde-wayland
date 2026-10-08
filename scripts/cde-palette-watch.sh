@@ -32,6 +32,20 @@ ds_log="${XDG_RUNTIME_DIR:-/tmp}/cde-wayland/dtsession.log"
 # trigger a restart.
 sig() { grep -a '^_DT_SM_PREFERENCES' "$store" 2>/dev/null | head -1; }
 
+# The store the palette lives in is under XDG_RUNTIME_DIR, so it does not
+# survive a logout or reboot.  Keep a copy in the session state; cde-session.sh
+# puts it back before dtsession starts, so the chosen palette is still in force
+# at the next login.
+state="${XDG_STATE_HOME:-$HOME/.local/state}/cde-wayland"
+save_palette() {
+    _line="$(grep -a '^RESOURCE_MANAGER' "$store" 2>/dev/null | head -1)"
+    [ -n "$_line" ] || return 0
+    mkdir -p "$state" 2>/dev/null || true
+    if printf '%s\n' "$_line" >"$state/resource-manager.tmp" 2>/dev/null; then
+        mv -f "$state/resource-manager.tmp" "$state/resource-manager" 2>/dev/null
+    fi
+}
+
 # The panel watcher must not outlive the session: a leftover instance would see
 # the next session's palette as a change and restart its colour server.  CoW is
 # the session's window manager and is not restarted on its own, so use it as the
@@ -85,6 +99,7 @@ while [ "$stable" -lt 3 ]; do
         stable=0
     fi
 done
+save_palette
 
 while :; do
     session_alive || exit 0
@@ -107,4 +122,5 @@ while :; do
             stable=0
         fi
     done
+    save_palette
 done

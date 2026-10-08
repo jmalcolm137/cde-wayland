@@ -65,8 +65,11 @@ What runs today:
   restarting the panel alone is not enough). Applications keep their colours and
   pick the palette up the next time they start — CDE's own behaviour on a
   display without dynamic colour, where its Style Manager says the change
-  "will take effect at your next session". Window frames are still CoW's (see
-  *What's left*).
+  "will take effect at your next session". The choice is also kept in
+  `$XDG_STATE_HOME/cde-wayland/resource-manager`, since the store the palette is
+  relayed through lives under `XDG_RUNTIME_DIR` and does not survive a logout or
+  reboot; `cde-session.sh` puts it back before dtsession starts. Window frames
+  are still CoW's (see *What's left*).
 * **Desktop** — per-workspace CDE backdrops (the Sun logo on workspace 0, then
   WaterDrops / RicePaper / Pebbles) and MWM-style cascading placement.
 * **Drag and drop** — Motif DnD is bridged through the compositor's drag and the

@@ -52,6 +52,21 @@ else
     log "warning: dtappgather not found; the Application Manager will be empty"
 fi
 
+# The palette dtsession's colour server publishes is relayed through the shim's
+# shared-property store, which lives under XDG_RUNTIME_DIR and so does not
+# survive a reboot or logout.  Keep a copy in the session state and put it back
+# before dtsession starts, so the palette chosen in the Style Manager is still
+# in force at the next login.  (CDE would restore it from its saved session with
+# dtsession_res -> xrdb, neither of which works in this architecture.)
+_cde_state="${XDG_STATE_HOME:-$HOME/.local/state}/cde-wayland"
+_shp="${XDG_RUNTIME_DIR:-/tmp}/xlib-wayland/smprops"
+if [ "${CDE_KEEP_PALETTE:-1}" = 1 ] && [ -f "$_cde_state/resource-manager" ]; then
+    if ! grep -q '^RESOURCE_MANAGER' "$_shp" 2>/dev/null; then
+        mkdir -p "$(dirname "$_shp")" 2>/dev/null || true
+        cat "$_cde_state/resource-manager" >>"$_shp" 2>/dev/null || true
+    fi
+fi
+
 # The CDE session manager (real dtsession).  It provides the session protocol
 # (the ToolTalk SM ops and the _DT_SM_* window/properties that Style Manager's
 # Startup panel looks for) and, via InitializeDtcolor(), the Dtcolor colour

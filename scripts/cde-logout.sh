@@ -31,9 +31,20 @@ if command -v cde-session-save.sh >/dev/null 2>&1; then
     cde-session-save.sh >/dev/null 2>&1 || true
 fi
 
+# Keep the palette for the next login: dtsession's colour server publishes it
+# into the shim's shared-property store, which is under XDG_RUNTIME_DIR and does
+# not survive.  cde-session.sh puts this copy back before dtsession starts.
+_state="${XDG_STATE_HOME:-$HOME/.local/state}/cde-wayland"
+_shp="${XDG_RUNTIME_DIR:-/tmp}/xlib-wayland/smprops"
+_pal="$(grep -a '^RESOURCE_MANAGER' "$_shp" 2>/dev/null | head -1)"
+if [ -n "$_pal" ]; then
+    mkdir -p "$_state" 2>/dev/null || true
+    printf '%s\n' "$_pal" >"$_state/resource-manager" 2>/dev/null || true
+fi
+
 # The palette watcher restarts dtsession and dtwm; it must not outlive the
 # session, or it would interfere with the next one.
-pkill -f 'bin/cde-palette-watch' 2>/dev/null
+pkill -f '^/bin/sh .*/cde-palette-watch$' 2>/dev/null
 pkill -x dtsession 2>/dev/null
 pkill -x dtwm      2>/dev/null
 pkill -x rpc.cmsd  2>/dev/null
