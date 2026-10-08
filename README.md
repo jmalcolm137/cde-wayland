@@ -78,6 +78,12 @@ What runs today:
   and `cde-cow-colours` hands the colours to CoW — immediately for a change made
   in the Style Manager (the palette file is named by the relayed resource
   database), with clients following on restart.
+  Applications do not read `RESOURCE_MANAGER` for their widget colours at all:
+  `DtInitialize` colours them from the colour server's pixel sets. The server
+  used to publish those by appending, so the property accumulated every palette
+  the session had ever used and a client could receive a block Motif could not
+  use, leaving it at Motif's default colours; it now publishes the current set
+  (`srvpalette-pixel-set.patch`).
 * **Desktop** — per-workspace CDE backdrops (the Sun logo on workspace 0, then
   WaterDrops / RicePaper / Pebbles) and MWM-style cascading placement.
 * **Drag and drop** — Motif DnD is bridged through the compositor's drag and the
@@ -243,6 +249,7 @@ pristine source is never touched.
 | `dtappgather-target.patch` | let `dtappgather` gather into a writable directory |
 | `dtsvc-logfiles-top.patch` | allow `CDE_LOGFILES_TOP` from the environment (`dtspcd`) |
 | `dtsvc-backdrop.patch` | run `cde-wsm-backdrop` when the Style Manager changes the backdrop |
+| `srvpalette-pixel-set.patch` | the colour server publishes the current pixel set instead of appending, so applications get a usable palette |
 | `dtstyle-startup.patch` | record the Style Manager Startup choices where the Wayland session and `cde-logout` can read them, and save the home session Wayland-side |
 | `dtsession-vfork-exit.patch` | `_exit` in `vfork` children (libpixman destructor crash) |
 | `dtwm-subpanel-unpost.patch` | unmap a sub-panel instead of `CallWmFunction(F_Kill)` |
