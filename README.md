@@ -68,8 +68,12 @@ What runs today:
   "will take effect at your next session". The choice is also kept in
   `$XDG_STATE_HOME/cde-wayland/resource-manager`, since the store the palette is
   relayed through lives under `XDG_RUNTIME_DIR` and does not survive a logout or
-  reboot; `cde-session.sh` puts it back before dtsession starts. Window frames
-  are still CoW's (see *What's left*).
+  reboot; `cde-session.sh` puts it back before dtsession starts. The frames,
+  menus and minimized icons CoW draws follow the palette as well: it is not an X
+  client, so `cde-palette-colours` reads the palette the way CDE's own dtwm does
+  and `cde-cow-colours` hands the colours to CoW — immediately for a change made
+  in the Style Manager (the palette file is named by the relayed resource
+  database), with clients following on restart.
 * **Desktop** — per-workspace CDE backdrops (the Sun logo on workspace 0, then
   WaterDrops / RicePaper / Pebbles) and MWM-style cascading placement.
 * **Drag and drop** — Motif DnD is bridged through the compositor's drag and the
@@ -219,10 +223,6 @@ rootless, and delegate window management to the compositor. See
   works, but there is no real engine (pinyin, …) to compose with.
 * **Mailer.** `dtmail` wants a setgid `mail` group (or a non-spool mailbox); a
   packaging item.
-* **Window frames ignore the palette.** Client colours come from CDE's palette
-  (see below), but the frames and titlebars are CoW's, configured in
-  `config/cow.conf`: CoW is not an X client and never sees `RESOURCE_MANAGER`, so
-  its colours are still hand-picked and do not follow a Style Manager change.
 * **CDE's own `sys.resources` is never applied.** `programs/dtsession` builds it
   with a `$(CPP)` rule that has no value in the generated Makefile, so the
   installed file is empty; `dtsession_res` would merge it, but it shells out to

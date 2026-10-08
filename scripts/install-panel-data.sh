@@ -76,8 +76,25 @@ if [ -f "$PROJECT_ROOT/tools/cde-confirm.c" ]; then
     fi
 fi
 
+# Frame and menu colours for CoW: it draws the desktop chrome but is not an X
+# client, so it cannot read the palette dtsession's colour server publishes.
+# This client reads it the way CDE's own dtwm does and prints the colours, which
+# cde-cow-colours hands to CoW.
+if [ -f "$PROJECT_ROOT/tools/cde-palette-colours.c" ]; then
+    if "${CC:-gcc}" -o "$CDE_PREFIX/bin/cde-palette-colours" \
+            "$PROJECT_ROOT/tools/cde-palette-colours.c" \
+            -I"$CDE_PREFIX/dt/include" -I"$CDE_PREFIX/include" -I/usr/include/tirpc \
+            -L"$CDE_PREFIX/dt/lib" -L"$CDE_PREFIX/lib" \
+            -lXm -lXt -lX11 \
+            -Wl,-rpath,"$CDE_PREFIX/lib:$CDE_PREFIX/dt/lib" 2>/dev/null; then
+        ok "installed cde-palette-colours (CDE frame/menu colours)"
+    else
+        warn "could not build cde-palette-colours; CoW keeps its own colours"
+    fi
+fi
+
 # Root-menu helpers: "Restart Workspace Manager..." and "Log out...".
-for h in cde-restart-dtwm.sh cde-logout.sh cde-toggle-frontpanel.sh cde-wsm-backdrop.sh cde-motif-apply.sh cde-session-save.sh cde-session-restore.sh cde-palette-watch.sh; do
+for h in cde-restart-dtwm.sh cde-logout.sh cde-toggle-frontpanel.sh cde-wsm-backdrop.sh cde-motif-apply.sh cde-session-save.sh cde-session-restore.sh cde-palette-watch.sh cde-cow-colours.sh; do
     [ -f "$PROJECT_ROOT/scripts/$h" ] || continue
     install -D -m 0755 "$PROJECT_ROOT/scripts/$h" \
         "$CDE_ROOT/bin/$(basename "$h" .sh)"

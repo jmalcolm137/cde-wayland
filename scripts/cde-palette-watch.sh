@@ -120,6 +120,16 @@ while :; do
     cur="$(sig)"
     [ "$cur" = "$prev" ] && continue
     prev="$cur"
+
+    # CoW's own chrome can follow at once: cde-cow-colours reads the palette from
+    # the colour server, which already has the new one by the time the change is
+    # visible here, and CoW takes the colours directly -- no restart involved.
+    # Only the clients need the restart below, because they read their resource
+    # database once, when they start.
+    if command -v cde-cow-colours >/dev/null 2>&1; then
+        cde-cow-colours
+    fi
+
     restart_colour_server_and_panel
     # Absorb whatever the restarted components republish, so a re-published
     # palette cannot start a restart loop.
@@ -135,4 +145,9 @@ while :; do
             stable=0
         fi
     done
+    # Re-apply: the restarted components republish a palette, and this also
+    # covers any colour the new one introduced.
+    if command -v cde-cow-colours >/dev/null 2>&1; then
+        cde-cow-colours
+    fi
 done

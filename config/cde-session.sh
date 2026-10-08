@@ -103,6 +103,13 @@ case ",${XLIB_WAYLAND_SHARE_PROPERTIES-}," in
         ;;
 esac
 
+# CoW draws the frames, menus and minimized icons but is not an X client, so it
+# cannot read the palette itself; hand it the palette's colours (see
+# scripts/cde-cow-colours.sh).
+if command -v cde-cow-colours >/dev/null 2>&1; then
+    cde-cow-colours &
+fi
+
 # The CDE Front Panel (real dtwm, contained).  dtwm skips its own ToolTalk
 # messaging: registering as the workspace/window manager is wrong here (CoW is
 # the WM) and it stopped the Front Panel from being created.
