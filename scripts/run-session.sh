@@ -87,15 +87,31 @@ chmod +x "$conf_home/cow/after-start.sh" "$conf_home/river/init"
 install -d "$CDE_PREFIX/share/cde-wayland"
 cp "$PROJECT_ROOT/config/cde-env.sh"      "$CDE_PREFIX/share/cde-wayland/cde-env.sh"
 cp "$PROJECT_ROOT/config/cde-session.sh"  "$CDE_PREFIX/share/cde-wayland/cde-session.sh"
-cp "$PROJECT_ROOT/config/Xresources"      "$CDE_PREFIX/share/cde-wayland/Xresources"
 chmod +x "$CDE_PREFIX/share/cde-wayland/cde-session.sh"
+
+# The session's resource file is CDE's own default session resources followed by
+# ours, so CDE's Motif tuning (thin shadows, etched-in menus, default buttons,
+# toggle visuals, ...) applies while our font and per-application settings win
+# where they overlap: in Xrm the later entry wins, and ours are instance
+# resources where CDE's are class resources.
+install_session_resources() {
+    _dst="$1"
+    install -d "$(dirname "$_dst")"
+    if [ -f "$CDE_ROOT/config/C/sys.resources" ]; then
+        cat "$CDE_ROOT/config/C/sys.resources" >"$_dst"
+    else
+        : >"$_dst"
+    fi
+    cat "$PROJECT_ROOT/config/Xresources" >>"$_dst"
+    chmod 0644 "$_dst"
+}
+install_session_resources "$CDE_PREFIX/share/cde-wayland/Xresources"
 
 # The shim (xlib-wayland) reads this session resource file independently of
 # XENVIRONMENT, so clients started without the CDE environment still get CDE's
 # fontsets (DtTerm's *userFont) and app-defaults.  Without it, DtTerm falls back
 # to a single core font and draws only a quarter of each multibyte string.
-install -D -m 0644 "$PROJECT_ROOT/config/Xresources" \
-    "$conf_home/xlib-wayland/Xresources"
+install_session_resources "$conf_home/xlib-wayland/Xresources"
 
 export XDG_CONFIG_HOME="$conf_home"
 

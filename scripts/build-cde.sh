@@ -62,12 +62,17 @@ CDE_CXXDEBUGFLAGS="-O2 -g -fno-strict-aliasing"
 # AR: GNU binutils 2.47 repurposed the `l` modifier to take an argument, so
 # the classic `ar clq` (imake's default) no longer parses; `ar crs` is the
 # modern equivalent and still creates the index.
+# CPP: imake's CppSourceFile rule invokes $(CPP), which no generated Makefile
+# defines here, so targets built through it (dtsession's sys.resources, the
+# default session resource file) came out empty.  WIDTH is what that file's
+# resolution branches select on.
 MAKE_OVERRIDES=(
     "CCOPTIONS=$CDE_CCOPTIONS"
     "CXXOPTIONS=$CDE_CXXOPTIONS"
     "CDEBUGFLAGS=$CDE_CDEBUGFLAGS"
     "CXXDEBUGFLAGS=$CDE_CXXDEBUGFLAGS"
     "AR=ar crs"
+    "CPP=$CPP_BIN -DWIDTH=${CDE_SCREEN_WIDTH:-1280}"
 )
 
 stage_prepare() {

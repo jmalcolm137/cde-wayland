@@ -223,11 +223,6 @@ rootless, and delegate window management to the compositor. See
   works, but there is no real engine (pinyin, …) to compose with.
 * **Mailer.** `dtmail` wants a setgid `mail` group (or a non-spool mailbox); a
   packaging item.
-* **CDE's own `sys.resources` is never applied.** `programs/dtsession` builds it
-  with a `$(CPP)` rule that has no value in the generated Makefile, so the
-  installed file is empty; `dtsession_res` would merge it, but it shells out to
-  `xrdb`, which is not installed either. The one setting that matters here
-  (`*ColorUse`) therefore lives in `config/Xresources`.
 * **Odds and ends.** The Front Panel's own **Lock** control does not fire under
   CoW (the Workspace Menu's *Lock Screen* works); the Workspace Menu's *Refresh*
   has no WSM equivalent; the `.bm` (X bitmap) backdrops have no PNG, so selecting

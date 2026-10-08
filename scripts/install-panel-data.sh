@@ -170,6 +170,30 @@ if [ -d "$_ap_src" ]; then
         rm -f "$_ap_tmp"
     done
     ok "installed CDE application defaults (Dtfile, Dtterm, ...)"
+
+# CDE's own default session resource file (sys.resources): the Motif tuning
+# (thin shadows, etched-in menus, default buttons, toggle visuals), *ColorUse,
+# the Dtfile view sizes and the tty modes.  imake's CppSourceFile rule invokes
+# $(CPP), which build-cde.sh now defines, so the file is generated there; its
+# WIDTH branches are written for a consumer that preprocesses its input (xrdb
+# used to), and the session merges the file directly instead, so resolve them
+# here.  -traditional-cpp leaves the resource values themselves untouched.
+_sr_src="$CDE_BUILD/programs/dtsession/sys.resources.src"
+if [ -f "$_sr_src" ]; then
+    mkdir -p "$CDE_ROOT/config/C"
+    if sed -e '/^XCOMM$/s//#/' \
+           -e '/^XCOMM[^a-zA-Z0-9_]/s/^XCOMM/#/' "$_sr_src" \
+         | "${CPP_BIN:-cpp}" -P -traditional-cpp \
+               -DWIDTH="${CDE_SCREEN_WIDTH:-1280}" - \
+         > "$CDE_ROOT/config/C/sys.resources" 2>/dev/null \
+       && [ -s "$CDE_ROOT/config/C/sys.resources" ]; then
+        chmod 0644 "$CDE_ROOT/config/C/sys.resources"
+        ok "installed CDE's default session resources (sys.resources)"
+    else
+        rm -f "$CDE_ROOT/config/C/sys.resources"
+        warn "could not build sys.resources; session keeps only our resources"
+    fi
+fi
 fi
 
 # 2. Front panel database.  _DtGetDatabaseDirPaths() searches
