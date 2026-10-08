@@ -95,7 +95,7 @@ Wayland session. They live in `config/dtwm-types/*.dt` and are installed into
 
 | Action | Why |
 |---|---|
-| `Dtappmgr` | CDE asks the File Manager for `/var/dt/appconfig/appmanager/$DTUSERSESSION`, which an unprivileged session cannot create; `cde-appmgr` opens the directory `dtappgather` collects instead |
+| `Dtappmgr` | CDE asks the File Manager for `/var/dt/appconfig/appmanager/$DTUSERSESSION`, which an unprivileged session cannot create; ask it for the directory `dtappgather` collects instead (so a running File Manager is reused) |
 | `DtLoadInfoLib` | start `dtinfo` directly rather than rely on ptype auto-start |
 | `LockDisplay` | run `waylock` instead of a ToolTalk request to dtsession |
 
