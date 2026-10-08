@@ -31,6 +31,15 @@ export XAPPLRESDIR="$CDE_PREFIX/share/X11/app-defaults"
 export DTINFOLIBDEFAULT="${DTINFOLIBDEFAULT:-cde}"
 export DTINFOLIBSEARCHPATH="$CDE_ROOT/appconfig/infolib/%L/%I.dti"
 
+# The Application Manager.  dtappgather gathers the application groups out of
+# <element>/appmanager/<lang>/ and symlinks them into TARGET_APPMAN_DIR.  CDE's
+# default target is /var/dt/appconfig/appmanager/<session>, which an
+# unprivileged session cannot create; install-panel-data.sh installs the groups
+# under $CDE_ROOT/appconfig/appmanager/C and this points the gathered result
+# beside them.
+export DTAPPSEARCHPATH="${DTAPPSEARCHPATH:-$CDE_ROOT/appconfig/appmanager/C}"
+export TARGET_APPMAN_DIR="${TARGET_APPMAN_DIR:-$CDE_ROOT/appconfig/appmanager/gathered}"
+
 # The shim synthesises the root RESOURCE_MANAGER from files.  Point it at our
 # CDE-ish resources unless the user already has their own.
 if [ -z "${XENVIRONMENT:-}" ] && [ -f "$CDE_PREFIX/share/cde-wayland/Xresources" ]; then

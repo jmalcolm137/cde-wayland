@@ -413,4 +413,44 @@ else
     warn "dtinfo not built; the InfoManager button will do nothing"
 fi
 
+# 9. Application Manager application groups.  dtappgather (built as dtappg)
+#    gathers the application groups from <element>/appmanager/<lang>/ into a
+#    writable directory; each entry is an action icon, i.e. a file named after
+#    the action it starts.  The group/entry list is CDE's install database.
+_udb="$CDE_BUILD/databases/CDE-RUN.udb"
+_apm="$CDE_ROOT/appconfig/appmanager/C"
+if [ -f "$_udb" ]; then
+    mkdir -p "$CDE_ROOT/appconfig/appmanager"
+    # Regenerate the tree, and drop the gathered result (dtappgather makes it
+    # read-only, and only adds missing links, so stale ones would survive).
+    chmod -R u+w "$CDE_ROOT/appconfig/appmanager/gathered" 2>/dev/null || true
+    rm -rf "$_apm" "$CDE_ROOT/appconfig/appmanager/gathered" 2>/dev/null || true
+    mkdir -p "$_apm"
+    _n=0
+    while IFS= read -r _rel; do
+        # the database has trailing spaces on some entries
+        _rel="$(printf '%s' "$_rel" | sed 's/[[:space:]]*$//')"
+        [ -n "$_rel" ] || continue
+        _dir="$_apm/$(dirname "$_rel")"
+        mkdir -p "$_dir"
+        printf '%s\n' "$(basename "$_rel")" > "$_dir/$(basename "$_rel")"
+        # The action's synthesized datatype criteria requires MODE "fx", i.e. a
+        # regular *executable* file, so the entry shows as an action icon.
+        chmod 0755 "$_dir/$(basename "$_rel")"
+        _n=$((_n + 1))
+    done < <(sed -n 's|.*install_target = .*/appconfig/appmanager/C/\(.*\)[ \t]*$|\1|p' "$_udb")
+    ok "installed $_n Application Manager entries"
+else
+    warn "CDE-RUN.udb not found; Application Manager groups not installed"
+fi
+# dtappgather is built as dtappg, but the action databases (e.g. ReloadApps)
+# and the Xsession script call it dtappgather.
+if [ -x "$CDE_ROOT/bin/dtappg" ] && [ ! -e "$CDE_ROOT/bin/dtappgather" ]; then
+    ln -sf dtappg "$CDE_ROOT/bin/dtappgather"
+    ok "linked dtappgather -> dtappg"
+fi
+if [ -x "$CDE_ROOT/bin/dtsp" ] && [ ! -e "$CDE_ROOT/bin/dtsearchpath" ]; then
+    ln -sf dtsp "$CDE_ROOT/bin/dtsearchpath"
+fi
+
 ok "panel data installed"

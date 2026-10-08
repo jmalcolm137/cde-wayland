@@ -38,6 +38,20 @@ if command -v rpc.cmsd >/dev/null 2>&1; then
         rpc.cmsd >"$_cmsd_log" 2>&1 &
 fi
 
+# Application Manager.  dtappgather gathers the CDE application groups
+# (Desktop_Apps, Desktop_Tools, ...) into TARGET_APPMAN_DIR, which cde-env.sh
+# points at a writable directory.  With -r it only adds entries that are
+# missing, so re-running it each session is harmless; the ReloadApps action
+# re-runs it too.
+if command -v dtappgather >/dev/null 2>&1; then
+    log "gathering the Application Manager groups (dtappgather)"
+    mkdir -p "${XDG_RUNTIME_DIR:-/tmp}/cde-wayland" 2>/dev/null || true
+    dtappgather -r >"${XDG_RUNTIME_DIR:-/tmp}/cde-wayland/dtappgather.log" 2>&1 \
+        || log "warning: dtappgather failed (see the log)"
+else
+    log "warning: dtappgather not found; the Application Manager will be empty"
+fi
+
 # The CDE session manager (real dtsession).  It provides the session protocol
 # (the ToolTalk SM ops and the _DT_SM_* window/properties that Style Manager's
 # Startup panel looks for) and, via InitializeDtcolor(), the Dtcolor colour

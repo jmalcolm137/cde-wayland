@@ -201,7 +201,7 @@ stage_libs() {
 stage_programs() {
     log "building CDE applications"
     local prog
-    for prog in dtcalc dtpad dthello dtstyle dtcm dtterm dtfile dthelp dtprintinfo dtaction dtexec; do
+    for prog in dtcalc dtpad dthello dtstyle dtcm dtterm dtfile dthelp dtprintinfo dtaction dtexec dtsearchpath; do
         [ -d "$CDE_BUILD/programs/$prog" ] || continue
         log "  make -C programs/$prog"
         # Some programs generate headers under the `includes` target that the
@@ -251,9 +251,11 @@ stage_install() {
     # $CDE_ROOT/bin.  dtaction is CDE's action-invocation CLI; dtexec is the
     # "command invoker" sub-process the action machinery execs for every
     # command action (<prefix>/bin/dtexec -open 0 -ttprocid ...).  Without it
-    # no action that goes through the normal path can run.
+    # no action that goes through the normal path can run.  dtsearchpath builds
+    # dtsp (sets the DT*SEARCHPATH variables) and dtappgather (dtappg), which
+    # builds the Application Manager's application groups.
     local p
-    for p in dtcalc dtpad dthello dtstyle dtcm dtterm dtfile dthelp dtprintinfo dtaction dtexec dtsession; do
+    for p in dtcalc dtpad dthello dtstyle dtcm dtterm dtfile dthelp dtprintinfo dtaction dtexec dtsearchpath dtsession; do
         [ -d "$CDE_BUILD/programs/$p" ] || continue
         ( cd "$CDE_BUILD/programs/$p" && make "${MAKE_OVERRIDES[@]}" install ) \
             || warn "programs/$p install failed"

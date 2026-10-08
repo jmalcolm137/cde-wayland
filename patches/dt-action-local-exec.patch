@@ -337,7 +337,7 @@
 +        { "Dtfile",         "exec \"$CDE_ROOT\"/bin/dtfile -dir \"$PWD\"" },
 +        { "Dttrash",        "mkdir -p \"$HOME/.dt/Trash\"; exec \"$CDE_ROOT\"/bin/dtfile -dir \"$HOME/.dt/Trash\"" },
 +        { "Trash",          "mkdir -p \"$HOME/.dt/Trash\"; exec \"$CDE_ROOT\"/bin/dtfile -dir \"$HOME/.dt/Trash\"" },
-+        { "Dtappmgr",       "mkdir -p \"$HOME/.dt/appmanager\"; exec \"$CDE_ROOT\"/bin/dtfile -dir \"$HOME/.dt/appmanager\"" },
++        { "Dtappmgr",       "exec \"$CDE_ROOT\"/bin/dtfile -title \"Application Manager\" -dir \"${TARGET_APPMAN_DIR:-$CDE_ROOT/appconfig/appmanager/gathered}\"" },
 +        { "TextEditor",     "exec \"$CDE_ROOT\"/bin/dtpad" },
 +        { "Dtpad",          "exec \"$CDE_ROOT\"/bin/dtpad" },
 +        { "Dtmail",         "exec \"$CDE_ROOT\"/bin/dtmail" },

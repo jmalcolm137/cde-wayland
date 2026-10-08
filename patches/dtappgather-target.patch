@@ -1,0 +1,21 @@
+--- a/programs/dtsearchpath/dtappg/dtappgather.C
++++ b/programs/dtsearchpath/dtappg/dtappgather.C
+@@ -111,6 +111,18 @@
+ 	    langVersionFound(0),
+ 	    appsp_(app)
+ {
++    // cde-wayland: the gathered directory normally lives under /var/dt, which
++    // an unprivileged session cannot create (and which would be shared between
++    // users).  Let it be redirected to a writable location instead.
++
++    const char *target_override = getenv("TARGET_APPMAN_DIR");
++    if (target_override && *target_override) {
++	dirname_ = target_override;
++	if (!user->OS()->isDirectory(dirname_))
++	    user->OS()->MakeDirectory(dirname_, 0755);
++	return;
++    }
++
+     // Set the users Application Manager subdirectory
+ 
+     CString userhostdir = user->UserHostDir();
