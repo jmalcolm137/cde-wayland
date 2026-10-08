@@ -122,6 +122,67 @@ else
     say "render: skipped (moocow/grim/python3 not available)"
 fi
 
+# A File Manager double-click must open the folder under the pointer.  This is
+# the functional counterpart of the render check above: when a shim rendering
+# regression stalls the repaint, it outruns DtIconGadget's multi-click timer and
+# the double-click is delivered as a plain select, so nothing opens
+# (xlib-wayland 5e5c051).  The input helpers are built by build-demo-input.sh.
+if command -v vmouse >/dev/null 2>&1 && command -v grim >/dev/null 2>&1 \
+   && command -v moocow >/dev/null 2>&1 && command -v python3 >/dev/null 2>&1; then
+    moocow exec dtfile >>"$log" 2>&1
+    sleep 4
+    _id=$(moocow show -a window 2>/dev/null | python3 -c '
+import json,sys
+for w in json.load(sys.stdin)["data"]:
+    if w["app_id"].startswith("File Manager"):
+        print(w["id"]); break' 2>/dev/null)
+    if [ -n "$_id" ]; then
+        moocow focus -i "$_id" >/dev/null 2>&1; sleep 0.3
+        moocow window-move -x 8 -y 324 >/dev/null 2>&1
+        moocow window-resize -w 620 -h 306 >/dev/null 2>&1; sleep 2
+        _f=$(mktemp --suffix=.png); _g=$(mktemp --suffix=.png)
+        grim -t png "$_f" >/dev/null 2>&1
+        # ".. (go up)" is the first icon; the first entry is the next one.
+        vmouse dclick 163 488 >>"$log" 2>&1
+        sleep 2
+        grim -t png "$_g" >/dev/null 2>&1
+        _diff=$(python3 - "$_f" "$_g" "$_id" 2>>"$log" <<'PY'
+import json, subprocess, sys
+try:
+    from PIL import Image, ImageChops
+except Exception:
+    print(-1); raise SystemExit
+a = Image.open(sys.argv[1]).convert("RGB")
+b = Image.open(sys.argv[2]).convert("RGB")
+out = subprocess.run(["moocow", "show", "-a", "window"],
+                     capture_output=True, text=True).stdout
+for w in json.loads(out)["data"]:
+    if w["id"] == sys.argv[3]:
+        x, y, ww, hh = w["x"], w["y"], w["width"], w["height"]
+        box = (x + 8, y + 60, x + ww - 8, y + hh - 30)
+        print(1 if ImageChops.difference(a.crop(box), b.crop(box)).getbbox() else 0)
+        break
+else:
+    print(-1)
+PY
+)
+        rm -f "$_f" "$_g"
+        case "$_diff" in ''|*[!0-9-]*) _diff=-1 ;; esac
+        if [ "$_diff" = 1 ]; then
+            say "double-click: the File Manager opened the entry"
+        elif [ "$_diff" = 0 ]; then
+            say "double-click: FAIL: the view did not change"
+            fail=1
+        else
+            say "double-click: skipped (no window or no Pillow)"
+        fi
+    else
+        say "double-click: skipped (no File Manager window)"
+    fi
+else
+    say "double-click: skipped (vmouse/grim/moocow/python3 not available)"
+fi
+
 if [ "$fail" -eq 0 ]; then
     say "PASS"
 else

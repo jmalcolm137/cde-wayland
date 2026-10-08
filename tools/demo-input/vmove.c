@@ -17,7 +17,7 @@ int main(int argc,char**argv){
   struct wl_display*d=wl_display_connect(NULL); if(!d){fprintf(stderr,"no display\n");return 1;}
   struct wl_registry*r=wl_display_get_registry(d); wl_registry_add_listener(r,&L,NULL); wl_display_roundtrip(d);
   if(!mgr){fprintf(stderr,"no virtual pointer manager\n");return 1;}
-  struct zwlr_virtual_pointer_v1*vp=zwlr_virtual_pointer_manager_v1_create_virtual_pointer(mgr,NULL);
+  struct zwlr_virtual_pointer_v1*vp=zwlr_virtual_pointer_manager_v1_create_virtual_pointer(mgr,seat);
   zwlr_virtual_pointer_v1_motion_absolute(vp,0,x,y,w,h);
   zwlr_virtual_pointer_v1_frame(vp);
   wl_display_roundtrip(d); usleep(150000);

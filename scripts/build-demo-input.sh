@@ -40,7 +40,7 @@ wayland-scanner private-code  "$src/vkbd.xml" "$tmp/vkbd.c"
 CFLAGS="$(pkg-config --cflags wayland-client xkbcommon)"
 LIBS="$(pkg-config --libs wayland-client xkbcommon)"
 
-for t in vclick vdclick vdrag vmove; do
+for t in vclick vdclick vdrag vmove vmouse; do
     cc -O2 $CFLAGS -o "$bindir/$t" "$src/$t.c" "$tmp/vptr.c" "$tmp/vptr.h" -I"$tmp" $LIBS
     echo "  $t -> $bindir/$t"
 done
