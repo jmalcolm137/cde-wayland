@@ -1,3 +1,14 @@
+# This patch modifies CDE (https://github.com/lkujaw/cde), which is released
+# under the GNU Lesser General Public License, version 2.0 or (at your option)
+# any later version; see CDE's COPYING.  CDE's own terms require that
+# modifications to it be made available under the GNU LGPL, so this patch is
+# licensed under the same.
+#
+# SPDX-License-Identifier: LGPL-2.0-or-later
+# Copyright (c) 2026 Justin Malcolm
+# Derived from CDE, Copyright (c) 1993-2012 The Open Group.
+# Modification: the colour server publishes the current pixel set instead of appending, so applications get a usable palette; 2026-10-08.
+#
 SrvPalette: publish the current colour pixel set instead of appending it
 
 _DtCacheProperties() holds the "SDT Pixel Set" property that Motif's XmColorObj

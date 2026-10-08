@@ -1,3 +1,11 @@
+# This patch modifies CoW (https://codeberg.org/cow-wm/cow), which is released
+# under the ISC License, Copyright (c) 2026 Thomas Adam.  The ISC notice above
+# is retained, and this patch is made available under the same terms.
+#
+# SPDX-License-Identifier: ISC
+# Copyright (c) 2026 Justin Malcolm
+# Modification: transient stacking; 2026-10-04.
+#
 diff --git a/src/stack.c b/src/stack.c
 index c019b6e..ba774bd 100644
 --- a/src/stack.c

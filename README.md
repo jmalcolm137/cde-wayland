@@ -254,6 +254,10 @@ The long-term goal is **unmodified sources**, so every CDE change lives in
 `patches/` as a small overlay that `build-cde.sh` applies to the build tree — the
 pristine source is never touched.
 
+Each overlay is a modification of the project it targets, so it carries that
+project's licence (LGPL for the CDE ones, ISC for CoW's); see
+[`patches/README.md`](patches/README.md) and [License](#license).
+
 | Patch | Purpose |
 |---|---|
 | `dtappgather-target.patch` | let `dtappgather` gather into a writable directory |
@@ -281,3 +285,25 @@ pristine source is never touched.
 | `CDE_BUILD` | `$CDE_PREFIX/build/cde` | CDE out-of-tree build copy |
 | `COW_SRC` / `RIVER_SRC` | `$CDE_CACHE/src/cow` / `.../river` | WM + compositor sources |
 | `JOBS` | `nproc` | parallel build jobs |
+
+## License
+
+This repository's own work — the scripts, the session and window-manager
+configuration, the helper tools under `tools/`, the documentation and the demo
+assets — is **MIT** (see [LICENSE](LICENSE)).
+
+The overlays under `patches/` are not: each one modifies another project and
+carries that project's licence instead.
+
+* The **CDE patches** modify [CDE](https://github.com/lkujaw/cde), which is
+  released under the **LGPL-2.0-or-later**. CDE's `COPYING` requires that
+  modifications to it be made available under the same terms, so those patches
+  are licensed the same way and carry a change notice each.
+* The **CoW patches** modify [CoW](https://codeberg.org/cow-wm/cow), which is
+  released under the **ISC License**; they retain the upstream notice.
+
+See [`patches/README.md`](patches/README.md) for the full split.
+
+No CDE or CoW source is redistributed here — the overlays are diffs, applied to
+a pristine tree by `build-cde.sh` — so CDE's media clause (icons, images and
+documentation under CC BY-SA 3.0, attribution "The Open Group") does not apply.
