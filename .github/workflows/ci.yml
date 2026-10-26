@@ -41,7 +41,9 @@ jobs:
           pacman -Syu --noconfirm --needed \
             base-devel git meson ninja pkgconf \
             wayland wayland-protocols libxkbcommon cairo freetype2 fontconfig \
-            libxrender libxcb libxi libxft libpng pixman
+            libpng pixman \
+            libx11 libxext libxrender libxcb libxi libxft libxt libxau libxcursor \
+            libxdamage libxfixes libxrandr libxinerama libxcomposite xorgproto
       - name: Check out the pinned shim
         uses: actions/checkout@v4
         with:
@@ -65,7 +67,7 @@ jobs:
         run: |
           pacman -Syu --noconfirm --needed \
             base-devel git meson ninja pkgconf \
-            wayland wayland-protocols libxkbcommon pangocairo cairo libbsd \
+            wayland wayland-protocols libxkbcommon pango cairo libbsd \
             bison flex libevent libxml2
       - name: Fetch the pinned revision
         run: |
@@ -95,10 +97,12 @@ jobs:
             base-devel git meson ninja cmake pkgconf \
             autoconf automake libtool bison flex byacc \
             wayland wayland-protocols libxkbcommon cairo freetype2 fontconfig \
-            pangocairo libxrender libxcb libxi libxft libpng pixman libbsd \
+            pango libxrender libxcb libxi libxft libpng pixman libbsd \
             libevent libxml2 rpcsvc-proto \
             libx11 libxext libxmu libxpm libxt libxaw libxsm libice \
-            libxinerama libxrandr libxss xorgproto
+            libxau libxcursor \
+            libxinerama libxrandr libxss libxdamage libxfixes libxcomposite \
+            xorgproto
       - uses: actions/checkout@v4
       - name: Build the whole stack
         run: make PREFIX="$PWD/prefix" all
