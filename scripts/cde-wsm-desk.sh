@@ -34,9 +34,9 @@ if [ "$_has_moocow" = 1 ]; then
         _p=$(cat "$_chosen" 2>/dev/null)
         case "$_p" in
             *NoBackdrop*)
-                moocow set output.image.background none >/dev/null 2>&1 ;;
+                moocow background image none >/dev/null 2>&1 ;;
             *)
-                [ -f "$_p" ] && moocow set output.image.background "$_p" >/dev/null 2>&1 ;;
+                [ -f "$_p" ] && moocow background image "$_p" >/dev/null 2>&1 ;;
         esac
     else
         _conf="${CDE_ROOT:-/usr/dt}/config/backdrops.conf"
@@ -48,12 +48,12 @@ if [ "$_has_moocow" = 1 ]; then
             case "$image" in
                 '$CDE_ROOT'*) image="${CDE_ROOT:-/usr/dt}${image#\$CDE_ROOT}" ;;
             esac
-            [ -n "$colour" ] && moocow set output.colour.background "$colour" >/dev/null 2>&1
+            [ -n "$colour" ] && moocow background colour "$colour" >/dev/null 2>&1
             if [ -n "$image" ]; then
-                moocow set output.image.background "$image" >/dev/null 2>&1
+                moocow background image "$image" >/dev/null 2>&1
             elif [ -n "$colour" ]; then
                 # Clear the image so a previous workspace's does not persist.
-                moocow set output.image.background none >/dev/null 2>&1
+                moocow background image none >/dev/null 2>&1
             fi
         fi
     fi

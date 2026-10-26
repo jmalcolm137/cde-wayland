@@ -17,10 +17,13 @@ XLIB_WAYLAND_REF=main
 CDE_REPO=https://github.com/lkujaw/cde.git
 CDE_REF=master
 
-# CoW window manager (River client) — default branch `main`.
+# CoW window manager (River client) — default branch `main`.  CoW 0.4 was
+# released 2026-10-25; we track main, so the checkout may be slightly ahead of
+# the tag.  Tested at fd999be (0.4 + one version-string commit).
 COW_REPO=https://codeberg.org/cow-wm/cow.git
 COW_REF=main
 
-# River compositor — default branch `main`. The Arch package is 0.4.8.
+# River compositor — default branch `main`.  CDE-on-Wayland is tested against
+# the distro package (Arch: river 0.5.0).
 RIVER_REPO=https://codeberg.org/river/river.git
 RIVER_REF=main

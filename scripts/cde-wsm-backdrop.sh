@@ -51,10 +51,10 @@ esac
 
 case "$path" in
     *NoBackdrop*)
-        moocow set output.image.background none >/dev/null 2>&1 ;;
+        moocow background image none >/dev/null 2>&1 ;;
     *)
         if [ -f "$path" ]; then
-            moocow set output.image.background "$path" >/dev/null 2>&1
+            moocow background image "$path" >/dev/null 2>&1
         else
             exit 0
         fi ;;
