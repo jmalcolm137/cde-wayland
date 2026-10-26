@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bash syntax
+        run: for f in scripts/*.sh; do bash -n "$f"; done
+      - name: ShellCheck
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq shellcheck
+          shellcheck -S warning scripts/*.sh
+
+  pins:
+    name: pinned revisions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: versions.lock resolves upstream
+        run: scripts/verify-pins.sh
+
+  shim:
+    name: xlib-wayland (pinned)
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Dependencies
+        run: |
+          pacman -Syu --noconfirm --needed \
+            base-devel git meson ninja pkgconf \
+            wayland wayland-protocols libxkbcommon cairo freetype2 fontconfig \
+            libxrender libxcb libxi libxft libpng pixman
+      - name: Check out the pinned shim
+        uses: actions/checkout@v4
+        with:
+          repository: jmalcolm137/xlib-wayland
+          ref: bf07693e94479200e1cf93cdb7cbcc844aae281f
+          path: xlib-wayland
+      - name: Build
+        run: |
+          meson setup xlib-wayland/build xlib-wayland \
+            --prefix=/usr --buildtype=release
+          ninja -C xlib-wayland/build
+      - name: Test
+        run: meson test -C xlib-wayland/build --print-errorlogs
+
+  cow:
+    name: cow (pinned)
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    steps:
+      - name: Dependencies
+        run: |
+          pacman -Syu --noconfirm --needed \
+            base-devel git meson ninja pkgconf \
+            wayland wayland-protocols libxkbcommon pangocairo cairo libbsd \
+            bison flex libevent libxml2
+      - name: Fetch the pinned revision
+        run: |
+          git init cow
+          git -C cow remote add origin https://codeberg.org/cow-wm/cow.git
+          git -C cow fetch --depth 1 origin fd999be6af4f87f82d061565bf2b2638f748e31c
+          git -C cow checkout -q FETCH_HEAD
+      - name: Build
+        run: |
+          meson setup cow/build cow --prefix=/usr --buildtype=release
+          ninja -C cow/build
+      - name: Test
+        run: meson test -C cow/build --print-errorlogs
+
+  # The full stack (shim + Xt/Motif + CoW + CDE + Front Panel).  Manual only:
+  # it is long, and its host dependency list is still being proven.
+  full:
+    name: full build (manual)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    timeout-minutes: 360
+    steps:
+      - name: Dependencies
+        run: |
+          pacman -Syu --noconfirm --needed \
+            base-devel git meson ninja cmake pkgconf \
+            autoconf automake libtool bison flex byacc \
+            wayland wayland-protocols libxkbcommon cairo freetype2 fontconfig \
+            pangocairo libxrender libxcb libxi libxft libpng pixman libbsd \
+            libevent libxml2 rpcsvc-proto \
+            libx11 libxext libxmu libxpm libxt libxaw libxsm libice \
+            libxinerama libxrandr libxss xorgproto
+      - uses: actions/checkout@v4
+      - name: Build the whole stack
+        run: make PREFIX="$PWD/prefix" all
+      - name: Build-result tree
+        run: |
+          find prefix -maxdepth 3 -type d | sort | head -50

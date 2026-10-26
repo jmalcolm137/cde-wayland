@@ -138,7 +138,7 @@ ffmpeg -y -loglevel error -framerate "$eff_fps" -i "$frames/%06d.png" \
     -vf "$scale_filter,palettegen=stats_mode=full" "$pal"
 ffmpeg -y -loglevel error -framerate "$eff_fps" -i "$frames/%06d.png" -i "$pal" \
     -gifflags -offsetting \
-    -lavfi "$scale_filter[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=3" \
+    -lavfi "${scale_filter}[x];[x][1:v]paletteuse=dither=bayer:bayer_scale=3" \
     -loop 0 "$out"
 rm -f "$pal"
 

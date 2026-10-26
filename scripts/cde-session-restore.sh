@@ -22,7 +22,7 @@ while IFS=$'\t' read -r cwd argv || [ -n "${argv:-}" ]; do
     prog="${argv%% *}"
     prog="$(eval "printf '%s' $prog" 2>/dev/null || true)"
     [ -x "$prog" ] || continue
-    ( cd "$cwd" 2>/dev/null || cd "$HOME"; eval "exec $argv" ) >/dev/null 2>&1 &
+    ( cd "$cwd" 2>/dev/null || cd "$HOME" || exit; eval "exec $argv" ) >/dev/null 2>&1 &
     n=$((n + 1))
 done <"$file"
 

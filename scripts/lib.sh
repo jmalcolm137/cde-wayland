@@ -79,13 +79,18 @@ require_any_cmd() {
 # fetch_src <repo> <ref> <dest> — clone if missing, else fetch/reset.
 fetch_src() {
     local repo="$1" ref="$2" dest="$3"
-    if [ -d "$dest/.git" ]; then
-        log "updating $(basename "$dest") ($ref)"
-        git -C "$dest" fetch --depth 1 origin "$ref"
-        git -C "$dest" checkout -q FETCH_HEAD
-    else
+    if [ ! -d "$dest/.git" ]; then
         log "cloning $repo ($ref)"
         mkdir -p "$(dirname "$dest")"
-        git clone --depth 1 --branch "$ref" "$repo" "$dest"
+        git init -q "$dest"
+        git -C "$dest" remote add origin "$repo"
+    else
+        log "updating $(basename "$dest") ($ref)"
     fi
+    # Fetch the ref, then check it out detached.  Doing it this way (rather than
+    # `clone --branch`) accepts a bare commit SHA as well as a branch or tag,
+    # which is what versions.lock pins.  -f discards the patch overlays a
+    # previous build applied in place; build-cow.sh re-applies them.
+    git -C "$dest" fetch -q --depth 1 origin "$ref"
+    git -C "$dest" checkout -q -f FETCH_HEAD
 }

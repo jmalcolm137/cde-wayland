@@ -1,4 +1,5 @@
 #!/bin/sh
+# shellcheck disable=SC2154  # the colours are set by eval from cde-palette-colours
 # cde-cow-colours — give CoW the CDE palette's colours for its own chrome.
 #
 # CoW draws the window frames, the window/workspace menus and the minimized
@@ -25,7 +26,9 @@ command -v moocow >/dev/null 2>&1 || exit 0
 vals="$(cde-palette-colours 2>/dev/null | grep -E '^[a-z_]+=#[0-9a-fA-F]{6}$')" || exit 0
 [ -n "$vals" ] || exit 0
 eval "$vals"
-[ -n "${active_bg:-}" ] && [ -n "${inactive_bg:-}" ] && [ -n "${primary_bg:-}" ] || exit 0
+[ -n "${active_bg:-}" ] && [ -n "${active_fg:-}" ] && \
+    [ -n "${inactive_bg:-}" ] && [ -n "${inactive_fg:-}" ] && \
+    [ -n "${primary_bg:-}" ] && [ -n "${primary_fg:-}" ] || exit 0
 
 hex() { printf '0x%s' "${1#\#}"; }
 

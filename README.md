@@ -1,5 +1,7 @@
 # CDE on Wayland
 
+[![CI](https://github.com/jmalcolm137/cde-wayland/actions/workflows/ci.yml/badge.svg)](https://github.com/jmalcolm137/cde-wayland/actions/workflows/ci.yml)
+
 Run the **Common Desktop Environment** natively on Wayland:
 
 * Motif applications speak Wayland through
@@ -158,29 +160,45 @@ See **What's left** below for the work that remains inside M1–M6.
 ## Quick start
 
 ```sh
-# 1. get the sources (CDE, CoW, River; imake if missing)
-scripts/fetch-sources.sh
-
-# 2. build the Wayland libX11 shim + libXt + Open Motif
-scripts/build-shim.sh
-
-# 3. build CoW (and River, if requested)
-scripts/build-cow.sh
-
-# 4. build the helper programs (tt-portmapper, so ToolTalk needs no root)
-scripts/build-tools.sh
-
-# 5. build and install CDE: bootstrap, libs, applications, then the Front Panel
-scripts/build-cde.sh all
-scripts/build-cde.sh programs
-scripts/build-cde.sh panel      # dtwm + front-panel data + install-panel-data.sh
-scripts/build-cde.sh install
+make                 # fetch, build and install the whole stack
 ```
 
-Everything installs relocatably under `$CDE_PREFIX`
-(default `$HOME/.local/cde-wayland`), so no root is required. The shim and the
-Xt/Motif stack install into the same prefix, and CDE installs under
-`$CDE_PREFIX/dt`.
+or, stage by stage:
+
+```sh
+make fetch           # clone the pinned sources (versions.lock)
+make shim            # the Wayland libX11 shim + libXt + Open Motif
+make cow             # CoW (WITH_RIVER=1 also builds River from source)
+make tools           # tt-portmapper and the other helper programs
+make cde             # CDE libraries, applications, Front Panel, install
+```
+
+`make help` lists the targets.  Everything installs relocatably under
+`$CDE_PREFIX` (default `$HOME/.local/cde-wayland`), so no root is required; the
+shim and the Xt/Motif stack install into the same prefix, and CDE installs
+under `$CDE_PREFIX/dt`.  Pass `PREFIX=/some/where` to install elsewhere and
+`JOBS=N` to control parallelism.
+
+`make verify-pins` checks that every revision in
+[`versions.lock`](versions.lock) still resolves upstream; CI runs it on every
+push, and every `*_REF` there is an exact commit (or a release tag), never a
+moving branch.
+
+### Prerequisites
+
+Arch package names; the equivalents exist everywhere.
+
+* **Build tools** — `base-devel`, `git`, `meson`, `ninja`, `cmake`, `pkgconf`,
+  `bison`, `flex`, `rpcsvc-proto` (for `rpcgen`).
+* **Libraries** — `wayland`, `wayland-protocols`, `libxkbcommon`, `cairo`,
+  `freetype2`, `fontconfig`, `pangocairo`, `libxrender`, `libxcb`, `libxi`,
+  `libxft`, `libpng`, `pixman`, `libbsd`, `libevent`, `libxml2`, `xorgproto`.
+* **Session** — `river` (the compositor; a distro package is preferred) and a
+  Wayland session, or a real seat for the DRM backend.
+* **Runtime** — `ibus` is optional; `waylock` is used by the Lock Screen
+  actions.
+
+No `sudo` is needed to install the stack itself.
 
 ## The CDE Front Panel
 

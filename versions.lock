@@ -1,11 +1,16 @@
 # Pinned upstream revisions for a reproducible CDE-on-Wayland build.
 # Update deliberately; River and CoW must be protocol-compatible.
+#
+# Every *_REF is an exact commit (or, for River, a release tag), never a moving
+# branch, so a build cannot drift with upstream.  scripts/verify-pins.sh -- and
+# the CI "pins" job -- confirm each one still resolves.
 
 # xlib-wayland — the Wayland libX11 shim.  All shim accommodations for CDE are
 # made in THIS repository, not here; we only consume it.
+# main, 2026-10-15 (Firefox/EWMH/headless-compositor work).
 XLIB_WAYLAND_REPO=https://github.com/jmalcolm137/xlib-wayland.git
-XLIB_WAYLAND_REF=main
-# Tested at cec9604.  Requires at least:
+XLIB_WAYLAND_REF=bf07693e94479200e1cf93cdb7cbcc844aae281f
+# Requires at least:
 #   b9a3142  XOpenDisplay reports an X display string (DtSvc parses it)
 #   a8c2a3e  Xmb/XwcTextExtents fill ink and logical independently
 #            (DtTerm's fontset path passes ink=NULL and crashed without this)
@@ -15,15 +20,15 @@ XLIB_WAYLAND_REF=main
 
 # CDE (imake tree) — default branch `master`.
 CDE_REPO=https://github.com/lkujaw/cde.git
-CDE_REF=master
+CDE_REF=e4b43aa1c4dacf72ceab6bfe73f1414396928883
 
-# CoW window manager (River client) — default branch `main`.  CoW 0.4 was
-# released 2026-10-25; we track main, so the checkout may be slightly ahead of
-# the tag.  Tested at fd999be (0.4 + one version-string commit).
+# CoW window manager (River client).  CoW 0.4 was released 2026-10-25; this is
+# main at that point plus the post-release version-string commit.
 COW_REPO=https://codeberg.org/cow-wm/cow.git
-COW_REF=main
+COW_REF=fd999be6af4f87f82d061565bf2b2638f748e31c
 
-# River compositor — default branch `main`.  CDE-on-Wayland is tested against
-# the distro package (Arch: river 0.5.0).
+# River compositor.  CDE-on-Wayland is tested against the distro package
+# (Arch: river 0.5.0); the tag pins the source build (`build-cow.sh
+# --with-river`) to the same release.  The tag resolves to the commit below.
 RIVER_REPO=https://codeberg.org/river/river.git
-RIVER_REF=main
+RIVER_REF=v0.5.0
