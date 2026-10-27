@@ -68,9 +68,7 @@ Arch package names; equivalents can be found on other distros.
 
 ## License
 
-This repository's own work — the scripts, the session and window-manager
-configuration, the helper tools under `tools/`, the documentation and the demo
-assets — is **MIT** (see [LICENSE](LICENSE)).
+This repository's own work is **MIT** (see [LICENSE](LICENSE)).
 
 The overlays under `patches/` are not: each one modifies another project and
 carries that project's licence instead.
