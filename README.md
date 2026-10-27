@@ -38,14 +38,9 @@ scripts/test-nested.sh          # start + smoke-test, leaves it running
 scripts/test-nested.sh --stop   # stop it
 ```
 
-Run one application against the bundled headless compositor:
-
-```sh
-scripts/run-app.sh dtcalc
-```
 ### Prerequisites
 
-Arch package names; the equivalents exist everywhere.
+Arch package names; equivalents can be found on other distros.
 
 * **Build tools** — `base-devel`, `git`, `meson`, `ninja`, `cmake`, `pkgconf`,
   `bison`, `flex`, `rpcsvc-proto` (for `rpcgen`).
