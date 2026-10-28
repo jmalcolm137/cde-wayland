@@ -94,7 +94,7 @@ jobs:
       - name: Dependencies
         run: |
           pacman -Syu --noconfirm --needed \
-            base-devel git meson ninja cmake pkgconf rsync \
+            base-devel git meson ninja cmake pkgconf rsync ksh \
             autoconf automake libtool bison flex byacc \
             wayland wayland-protocols libxkbcommon cairo freetype2 fontconfig \
             pango libxrender libxcb libxi libxft libpng pixman libbsd \

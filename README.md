@@ -43,7 +43,7 @@ scripts/test-nested.sh --stop   # stop it
 Arch package names; equivalents can be found on other distros.
 
 * **Build tools** — `base-devel`, `git`, `meson`, `ninja`, `cmake`, `pkgconf`,
-  `rsync`, `bison`, `flex`, `rpcsvc-proto` (for `rpcgen`).
+  `rsync`, `ksh`, `bison`, `flex`, `rpcsvc-proto` (for `rpcgen`).
 * **Libraries** — `wayland`, `wayland-protocols`, `libxkbcommon`, `cairo`,
   `freetype2`, `fontconfig`, `pango`, `libxrender`, `libxcb`, `libxi`,
   `libxft`, `libpng`, `pixman`, `libbsd`, `libevent`, `libxml2`, `xorgproto`,

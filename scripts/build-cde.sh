@@ -198,6 +198,12 @@ stage_libs() {
           "$CDE_BUILD/lib/csa"/rtable2_clnt.c "$CDE_BUILD/lib/csa"/rtable3_clnt.c \
           "$CDE_BUILD/lib/csa"/rtable4_clnt.c "$CDE_BUILD/lib/csa"/cm_clnt.c \
           "$CDE_BUILD/lib/csa"/reparser.c "$CDE_BUILD/lib/csa"/reparser.h
+    # lib/csa's .y.c suffix rule writes reparser.h as a side effect of
+    # reparser.c, but only reparser.c is declared: a parallel build can compile
+    # rescan.c (which includes reparser.h) before it exists.  Generate the
+    # parser serially first.
+    ( cd "$CDE_BUILD/lib/csa" && make "${MAKE_OVERRIDES[@]}" reparser.c ) >/dev/null 2>&1 || \
+        warn "lib/csa: could not pre-generate reparser.c"
     ( cd "$CDE_BUILD/include" && make "${MAKE_OVERRIDES[@]}" )
     ( cd "$CDE_BUILD/lib"     && make "${MAKE_OVERRIDES[@]}" -j"$JOBS" )
     ok "CDE libraries built"
