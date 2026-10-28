@@ -102,7 +102,7 @@ jobs:
             libx11 libxext libxmu libxpm libxt libxaw libsm libice \
             libxau libxcursor libxdmcp libxp \
             libxinerama libxrandr libxss libxdamage libxfixes libxcomposite \
-            libjpeg-turbo bzip2 libtirpc util-linux zlib \
+            libjpeg-turbo bzip2 libtirpc util-linux zlib xbitmaps ncurses \
             xorgproto
       - uses: actions/checkout@v4
       - name: Build the whole stack
