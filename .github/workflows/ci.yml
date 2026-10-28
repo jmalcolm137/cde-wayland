@@ -99,9 +99,10 @@ jobs:
             wayland wayland-protocols libxkbcommon cairo freetype2 fontconfig \
             pango libxrender libxcb libxi libxft libpng pixman libbsd \
             libevent libxml2 rpcsvc-proto \
-            libx11 libxext libxmu libxpm libxt libxaw libxsm libice \
-            libxau libxcursor \
+            libx11 libxext libxmu libxpm libxt libxaw libsm libice \
+            libxau libxcursor libxdmcp libxp \
             libxinerama libxrandr libxss libxdamage libxfixes libxcomposite \
+            libjpeg-turbo bzip2 libtirpc util-linux zlib \
             xorgproto
       - uses: actions/checkout@v4
       - name: Build the whole stack

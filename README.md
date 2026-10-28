@@ -45,7 +45,7 @@ Arch package names; equivalents can be found on other distros.
 * **Build tools** — `base-devel`, `git`, `meson`, `ninja`, `cmake`, `pkgconf`,
   `bison`, `flex`, `rpcsvc-proto` (for `rpcgen`).
 * **Libraries** — `wayland`, `wayland-protocols`, `libxkbcommon`, `cairo`,
-  `freetype2`, `fontconfig`, `pangocairo`, `libxrender`, `libxcb`, `libxi`,
+  `freetype2`, `fontconfig`, `pango`, `libxrender`, `libxcb`, `libxi`,
   `libxft`, `libpng`, `pixman`, `libbsd`, `libevent`, `libxml2`, `xorgproto`.
 * **Session** — `river` (the compositor; a distro package is preferred) and a
   Wayland session, or a real seat for the DRM backend.

@@ -31,6 +31,34 @@ fetch_src "$CDE_REPO"   "$CDE_REF"   "$CDE_SRC"
 fetch_src "$COW_REPO"   "$COW_REF"   "$COW_SRC"
 fetch_src "$RIVER_REPO" "$RIVER_REF" "$RIVER_SRC"
 
+# libXt and Open Motif are release tarballs, not repositories: they are built
+# against the shim, so a distro copy cannot be used.  Download, verify and
+# unpack them into the source cache.
+fetch_tarball() {
+    local name="$1" url="$2" sha="$3" dest="$4" version="$5"
+    if [ -f "$dest/configure" ]; then
+        ok "$name $version already unpacked in $dest"
+        return 0
+    fi
+    log "fetching $name $version"
+    local tmp root
+    tmp="$(mktemp -d)"
+    curl -fsSL "$url" -o "$tmp/src.tar" || die "cannot download $url"
+    echo "$sha  $tmp/src.tar" | sha256sum -c - >/dev/null 2>&1 || \
+        die "$name: checksum mismatch for $url"
+    tar -xf "$tmp/src.tar" -C "$tmp" || die "$name: cannot unpack the archive"
+    root="$(find "$tmp" -mindepth 1 -maxdepth 1 -type d | head -1)"
+    [ -n "$root" ] || die "$name: unexpected archive layout"
+    mkdir -p "$dest"
+    cp -a "$root/." "$dest/"
+    rm -rf "$tmp"
+    ok "$name $version unpacked in $dest"
+}
+
+require_cmd curl
+fetch_tarball "libXt"      "$LIBXT_URL" "$LIBXT_SHA256" "$LIBXT_SRC" "$LIBXT_VERSION"
+fetch_tarball "Open Motif" "$MOTIF_URL" "$MOTIF_SHA256" "$MOTIF_SRC" "$MOTIF_VERSION"
+
 # ---------------------------------------------------------------------------
 # Build tools missing on a minimal/modern host.  We do not require root: on a
 # pacman-based system we unpack the package into $CDE_PREFIX/tools, which the

@@ -24,9 +24,12 @@ fi
 XLIB_WAYLAND_REPO="${XLIB_WAYLAND_REPO:-https://github.com/jmalcolm137/xlib-wayland.git}"
 XLIB_WAYLAND_REF="${XLIB_WAYLAND_REF:-main}"
 
-# Open Motif source (used only to pick up its Xm bitmaps if the Motif install
-# did not install them; see build-cde.sh).
-MOTIF_SRC="${MOTIF_SRC:-${MW_SRC:-${TMPDIR:-/tmp}/xlib-wayland}/motif}"
+# Upstream libXt + Open Motif sources.  fetch-sources.sh unpacks the pinned
+# tarballs here, build-shim.sh builds them against the shim, and build-cde.sh
+# reads Motif's bitmaps from $MOTIF_SRC/bitmaps when Motif did not install them.
+MW_SRC="${MW_SRC:-$CDE_CACHE/src/xlib-wayland}"
+LIBXT_SRC="${LIBXT_SRC:-$MW_SRC/libxt}"
+MOTIF_SRC="${MOTIF_SRC:-$MW_SRC/motif}"
 
 CDE_SRC="${CDE_SRC:-$CDE_CACHE/src/cde}"
 CDE_BUILD="${CDE_BUILD:-$CDE_PREFIX/build/cde}"
@@ -47,7 +50,8 @@ else
     JOBS=4
 fi
 
-export CDE_PREFIX CDE_CACHE XLIB_WAYLAND CDE_SRC CDE_BUILD COW_SRC RIVER_SRC MOTIF_SRC
+export CDE_PREFIX CDE_CACHE XLIB_WAYLAND CDE_SRC CDE_BUILD COW_SRC RIVER_SRC
+export MW_SRC LIBXT_SRC MOTIF_SRC
 export CDE_ROOT COW_PREFIX JOBS
 export XLIB_WAYLAND_REPO XLIB_WAYLAND_REF
 

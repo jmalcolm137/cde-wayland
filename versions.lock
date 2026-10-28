@@ -32,3 +32,15 @@ COW_REF=fd999be6af4f87f82d061565bf2b2638f748e31c
 # --with-river`) to the same release.  The tag resolves to the commit below.
 RIVER_REPO=https://codeberg.org/river/river.git
 RIVER_REF=v0.5.0
+
+# libXt and Open Motif sources.  The shim replaces libX11, so libXt and Motif
+# must be built against it; fetch-sources.sh unpacks these release tarballs and
+# build-shim.sh builds them.  build-cde.sh also reads Motif's bitmaps from
+# $MOTIF_SRC/bitmaps.  Pinned with checksums.
+LIBXT_VERSION=1.3.1
+LIBXT_URL=https://www.x.org/releases/individual/lib/libXt-1.3.1.tar.xz
+LIBXT_SHA256=e0a774b33324f4d4c05b199ea45050f87206586d81655f8bef4dba434d931288
+
+MOTIF_VERSION=2.3.8
+MOTIF_URL=https://downloads.sourceforge.net/project/motif/Motif%202.3.8%20Source%20Code/motif-2.3.8.tar.gz
+MOTIF_SHA256=859b723666eeac7df018209d66045c9853b50b4218cecadb794e2359619ebce7
