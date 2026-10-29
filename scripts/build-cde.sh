@@ -176,21 +176,25 @@ stage_makefiles() {
     log "generating xmakefile and all Makefiles"
     ( cd "$CDE_BUILD" && imake_cmd -s xmakefile )
     local mlog="$CDE_BUILD/.makefiles.log"
-    ( cd "$CDE_BUILD" && make -f xmakefile Makefiles ) >"$mlog" 2>&1 || true
+    # imake's Makefiles:: recipe inspects MAKEFLAGS.  It treats any flag
+    # containing `n` as a dry run and any containing `i`/`k` as "ignore
+    # errors" -- so a perfectly ordinary modern flag such as
+    # `--no-print-directory` (which this repository's Makefile passes) makes
+    # the pass silently generate nothing.  Run it with a clean MAKEFLAGS.
+    ( cd "$CDE_BUILD" && MAKEFLAGS= make -f xmakefile Makefiles ) >"$mlog" 2>&1 || true
 
     # imake's Makefiles:: recipe starts with `-@`, so make ignores a failure
-    # inside it and reports success.  On a fresh tree the first pass can leave
-    # the subdirectory Makefiles ungenerated; a second pass then creates them.
-    # Do not trust the exit status -- check the files, retry once, and fail
-    # loudly if they are still missing (otherwise the failure surfaces much
-    # later, as a confusing "No rule to make target 'includes'").
+    # inside it and reports success.  Do not trust the exit status -- check the
+    # files, retry once, and fail loudly if they are still missing (otherwise
+    # the failure surfaces much later, as a confusing "No rule to make target
+    # 'includes'").
     local d missing=0
     for d in config util include lib programs databases admin; do
         [ -f "$CDE_BUILD/$d/Makefile" ] || missing=1
     done
     if [ "$missing" -eq 1 ]; then
         warn "imake did not generate every Makefile; retrying once"
-        ( cd "$CDE_BUILD" && make -f xmakefile Makefiles ) >>"$mlog" 2>&1 || true
+        ( cd "$CDE_BUILD" && MAKEFLAGS= make -f xmakefile Makefiles ) >>"$mlog" 2>&1 || true
     fi
     for d in config util include lib programs databases admin; do
         [ -f "$CDE_BUILD/$d/Makefile" ] || \
