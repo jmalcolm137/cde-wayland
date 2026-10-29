@@ -175,7 +175,25 @@ stage_makefiles() {
     ensure_imake
     log "generating xmakefile and all Makefiles"
     ( cd "$CDE_BUILD" && imake_cmd -s xmakefile )
-    ( cd "$CDE_BUILD" && make -f xmakefile Makefiles )
+    ( cd "$CDE_BUILD" && make -f xmakefile Makefiles ) >/dev/null 2>&1 || true
+
+    # imake's Makefiles:: recipe starts with `-@`, so make ignores a failure
+    # inside it and reports success.  On a fresh tree the first pass can leave
+    # the subdirectory Makefiles ungenerated; a second pass then creates them.
+    # Do not trust the exit status -- check the files, retry once, and fail
+    # loudly if they are still missing (otherwise the failure surfaces much
+    # later, as a confusing "No rule to make target 'includes'").
+    local d missing=0
+    for d in config util include lib programs databases admin; do
+        [ -f "$CDE_BUILD/$d/Makefile" ] || missing=1
+    done
+    if [ "$missing" -eq 1 ]; then
+        warn "imake did not generate every Makefile; retrying once"
+        ( cd "$CDE_BUILD" && make -f xmakefile Makefiles ) >/dev/null 2>&1 || true
+    fi
+    for d in config util include lib programs databases admin; do
+        [ -f "$CDE_BUILD/$d/Makefile" ] || die "imake did not generate $d/Makefile"
+    done
     ok "Makefiles generated"
 }
 
