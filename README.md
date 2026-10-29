@@ -5,7 +5,7 @@
 Run the **Common Desktop Environment** natively on Wayland:
 
 * Motif applications speak Wayland through
-  [xlib-wayland](../xlib-wayland) — a Wayland-native, ABI-compatible `libX11`.
+  [xlib-wayland](../xlib-wayland), a Wayland-native, ABI-compatible `libX11`.
   No X server, no Xwayland.
 * Window management and decorations come from
   [CoW](https://codeberg.org/cow-wm/cow), a stacking WM running on the
