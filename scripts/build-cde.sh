@@ -181,7 +181,7 @@ stage_makefiles() {
     # errors" -- so a perfectly ordinary modern flag such as
     # `--no-print-directory` (which this repository's Makefile passes) makes
     # the pass silently generate nothing.  Run it with a clean MAKEFLAGS.
-    ( cd "$CDE_BUILD" && MAKEFLAGS= make -f xmakefile Makefiles ) >"$mlog" 2>&1 || true
+    ( cd "$CDE_BUILD" && MAKEFLAGS='' make -f xmakefile Makefiles ) >"$mlog" 2>&1 || true
 
     # imake's Makefiles:: recipe starts with `-@`, so make ignores a failure
     # inside it and reports success.  Do not trust the exit status -- check the
@@ -194,7 +194,7 @@ stage_makefiles() {
     done
     if [ "$missing" -eq 1 ]; then
         warn "imake did not generate every Makefile; retrying once"
-        ( cd "$CDE_BUILD" && MAKEFLAGS= make -f xmakefile Makefiles ) >>"$mlog" 2>&1 || true
+        ( cd "$CDE_BUILD" && MAKEFLAGS='' make -f xmakefile Makefiles ) >>"$mlog" 2>&1 || true
     fi
     for d in config util include lib programs databases admin; do
         [ -f "$CDE_BUILD/$d/Makefile" ] || \
