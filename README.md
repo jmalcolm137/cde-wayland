@@ -47,7 +47,8 @@ Arch package names; equivalents can be found on other distros.
 * **Libraries** — `wayland`, `wayland-protocols`, `libxkbcommon`, `cairo`,
   `freetype2`, `fontconfig`, `pango`, `libxrender`, `libxcb`, `libxi`,
   `libxft`, `libpng`, `pixman`, `libbsd`, `libevent`, `libxml2`, `xorgproto`,
-  `xbitmaps` (Motif needs the X bitmaps).
+  `xbitmaps` (Motif needs the X bitmaps), `opensp` and `imagemagick`
+  (help volumes and backdrop conversion).
 * **Session** — `river` (the compositor; a distro package is preferred) and a
   Wayland session, or a real seat for the DRM backend.
 * **Runtime** — `ibus` is optional; `waylock` is used by the Lock Screen
