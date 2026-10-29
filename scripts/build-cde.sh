@@ -175,7 +175,8 @@ stage_makefiles() {
     ensure_imake
     log "generating xmakefile and all Makefiles"
     ( cd "$CDE_BUILD" && imake_cmd -s xmakefile )
-    ( cd "$CDE_BUILD" && make -f xmakefile Makefiles ) >/dev/null 2>&1 || true
+    local mlog="$CDE_BUILD/.makefiles.log"
+    ( cd "$CDE_BUILD" && make -f xmakefile Makefiles ) >"$mlog" 2>&1 || true
 
     # imake's Makefiles:: recipe starts with `-@`, so make ignores a failure
     # inside it and reports success.  On a fresh tree the first pass can leave
@@ -189,10 +190,11 @@ stage_makefiles() {
     done
     if [ "$missing" -eq 1 ]; then
         warn "imake did not generate every Makefile; retrying once"
-        ( cd "$CDE_BUILD" && make -f xmakefile Makefiles ) >/dev/null 2>&1 || true
+        ( cd "$CDE_BUILD" && make -f xmakefile Makefiles ) >>"$mlog" 2>&1 || true
     fi
     for d in config util include lib programs databases admin; do
-        [ -f "$CDE_BUILD/$d/Makefile" ] || die "imake did not generate $d/Makefile"
+        [ -f "$CDE_BUILD/$d/Makefile" ] || \
+            die "imake did not generate $d/Makefile (log: $mlog)"
     done
     ok "Makefiles generated"
 }
