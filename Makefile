@@ -61,6 +61,8 @@ tools:
 cde:
 	scripts/build-cde.sh all
 	scripts/build-cde.sh programs
+	scripts/build-cde.sh doc
+	scripts/build-help.sh
 	scripts/build-cde.sh panel
 	scripts/build-cde.sh install
 

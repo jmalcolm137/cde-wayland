@@ -15,6 +15,7 @@
 #   includes    install CDE headers into the build tree
 #   libs        build include/ and lib/
 #   programs    build the leaf applications that work without dtsession
+#   doc         build the documentation toolchain (help: dtdocbook, dtsr)
 #   panel       build the real CDE Front Panel (dtwm) + its data + ttsession
 #   install     install what has been built into $CDE_ROOT
 #   all         prepare imake makefiles includes libs
@@ -251,6 +252,22 @@ stage_programs() {
 # The CDE Front Panel is dtwm's; build it (unmodified) plus the panel database
 # and the ToolTalk session daemon it needs.  dtwm runs as a contained panel
 # under CoW, never as the session's window manager (see DESIGN.md §5.2).
+stage_doc() {
+    # The help volumes are produced by CDE's own dtdocbook pipeline.  It needs
+    # the `instant` converter (which links Tcl), the xlate_locale translator,
+    # and dtsr's indexer for the dtinfo search engine.  build-help.sh drives the
+    # rest (nsgmls, dthelp_htag2).
+    log "building the documentation toolchain"
+    local d
+    for d in programs/dtdocbook programs/dtsr; do
+        [ -d "$CDE_BUILD/$d" ] || continue
+        log "  make -C $d"
+        ( cd "$CDE_BUILD/$d" && make "${MAKE_OVERRIDES[@]}" -j"$JOBS" ) \
+            || warn "$d failed"
+    done
+    ok "documentation toolchain built"
+}
+
 stage_panel() {
     log "building the real CDE Front Panel (dtwm) and its data"
     # Remove stale cpp output.  The cpp rules only regenerate a *missing*
@@ -335,6 +352,7 @@ for st in "${STAGES[@]}"; do
         includes)  stage_includes ;;
         libs)      stage_libs ;;
         programs)  stage_programs ;;
+        doc)       stage_doc ;;
         panel)     stage_panel ;;
         install)   stage_install ;;
         all)       stage_prepare; stage_imake; stage_makefiles; stage_includes; stage_libs ;;

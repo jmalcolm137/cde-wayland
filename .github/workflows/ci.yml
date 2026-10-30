@@ -103,7 +103,7 @@ jobs:
             libxau libxcursor libxdmcp libxp \
             libxinerama libxrandr libxss libxdamage libxfixes libxcomposite \
             libjpeg-turbo bzip2 libtirpc util-linux zlib xbitmaps ncurses \
-            opensp imagemagick \
+            opensp imagemagick tcl \
             xorgproto
       - uses: actions/checkout@v4
       - name: Build the whole stack

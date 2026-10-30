@@ -8,6 +8,12 @@
 # appconfig/infolib/<locale>/cde.dti.
 #
 # Needs a CDE build tree (scripts/build-cde.sh libs) and nsgmls (opensp).
+#
+# NOTE: this cannot run as shipped.  dtinfogen requires dbdrv, NCFGen,
+# MixedGen, NodeParser, StyleUpdate and valBase, which are NOT part of the CDE
+# source release (grepping the tree finds none of them).  Without them there is
+# no infolib for dtinfo to browse, so this script is not part of `make cde`.
+# It is kept for the day those tools are published.
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/lib.sh"
 
