@@ -18,6 +18,10 @@ set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/lib.sh"
 
 [ -d "$CDE_BUILD" ] || die "no CDE build tree at $CDE_BUILD; run scripts/build-cde.sh"
+# The documentation tools run from the build tree, before `make cde`
+# installs the libraries; point the loader at the build tree's libs.
+export LD_LIBRARY_PATH="$CDE_BUILD/exports/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
 GUIDES="$CDE_BUILD/doc/C/guides"
 [ -f "$GUIDES/Imakefile" ] || die "no $GUIDES/Imakefile"
 command -v nsgmls >/dev/null 2>&1 || die "nsgmls not found (install opensp)"

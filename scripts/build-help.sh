@@ -47,6 +47,10 @@ fi
 
 # The DocBook SGML declaration/DTD catalog and the locale translation database
 # live in the build tree; point the tools at them instead of /usr/dt.
+# The documentation tools run from the build tree, before `make cde`
+# installs the libraries; point the loader at the build tree's libs.
+export LD_LIBRARY_PATH="$CDE_BUILD/exports/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
 LCX="$CDE_BUILD/lib/DtHelp"
 
 mkdir -p "$OUT"
