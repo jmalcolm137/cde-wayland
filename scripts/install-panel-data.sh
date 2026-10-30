@@ -538,8 +538,13 @@ fi
 if [ -x "$CDE_BUILD/programs/dtinfo/dtinfo/src/dtinfo" ]; then
     install -D -m 0755 "$CDE_BUILD/programs/dtinfo/dtinfo/src/dtinfo" \
         "$CDE_ROOT/bin/dtinfo"
-    install -D -m 0755 "$CDE_BUILD/programs/dtinfo/clients/dtinfo_start/dtinfo_start" \
-        "$CDE_ROOT/infolib/etc/dtinfo_start"
+    # dtinfo_start is built with the dtinfo clients; the infolib pipeline
+    # cannot run as shipped (its tools are not in the CDE source), so this is
+    # best-effort rather than fatal.
+    if [ -x "$CDE_BUILD/programs/dtinfo/clients/dtinfo_start/dtinfo_start" ]; then
+        install -D -m 0755 "$CDE_BUILD/programs/dtinfo/clients/dtinfo_start/dtinfo_start" \
+            "$CDE_ROOT/infolib/etc/dtinfo_start"
+    fi
     if [ -d "$CDE_BUILD/doc/C/cde.dti" ]; then
         for loc in C ${LANG:-} en_US.UTF-8; do
             [ -n "$loc" ] || continue
