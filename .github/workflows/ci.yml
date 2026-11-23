@@ -48,7 +48,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: jmalcolm137/xlib-wayland
-          ref: bf07693e94479200e1cf93cdb7cbcc844aae281f
+          ref: 498beebc6484ef052fb1145a37ae55dc4ef6cca6
           path: xlib-wayland
       - name: Build
         run: |

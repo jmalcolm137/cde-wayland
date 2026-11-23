@@ -35,7 +35,11 @@ fi
 # into the shim's shared-property store, which is under XDG_RUNTIME_DIR and does
 # not survive.  cde-session.sh puts this copy back before dtsession starts.
 _state="${XDG_STATE_HOME:-$HOME/.local/state}/cde-wayland"
-_shp="${XDG_RUNTIME_DIR:-/tmp}/xlib-wayland/smprops"
+if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
+    _shp="$XDG_RUNTIME_DIR/xlib-wayland/smprops"
+else
+    _shp="/tmp/xlib-wayland-$(id -u)/smprops"
+fi
 _pal="$(grep -a '^RESOURCE_MANAGER' "$_shp" 2>/dev/null | head -1)"
 if [ -n "$_pal" ]; then
     mkdir -p "$_state" 2>/dev/null || true

@@ -23,7 +23,11 @@ set -u
 : "${CDE_ROOT:=/usr/dt}"
 export PATH="$CDE_ROOT/bin:$PATH"
 
-store="${XDG_RUNTIME_DIR:-/tmp}/xlib-wayland/smprops"
+if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
+    store="$XDG_RUNTIME_DIR/xlib-wayland/smprops"
+else
+    store="/tmp/xlib-wayland-$(id -u)/smprops"
+fi
 ds_log="${XDG_RUNTIME_DIR:-/tmp}/cde-wayland/dtsession.log"
 
 # The property holds just the palette (*0*ColorPalette, *background,

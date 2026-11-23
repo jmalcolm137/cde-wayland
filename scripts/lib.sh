@@ -15,7 +15,7 @@ CDE_CACHE="${CDE_CACHE:-$HOME/.cache/cde-wayland}"
 # not vendored here.  By default we use a checkout in the cache, but a local
 # sibling checkout is used automatically if one exists.
 if [ -z "${XLIB_WAYLAND:-}" ]; then
-    if [ -d "$PROJECT_ROOT/../xlib-wayland/meson.build" ]; then
+    if [ -f "$PROJECT_ROOT/../xlib-wayland/meson.build" ]; then
         XLIB_WAYLAND="$PROJECT_ROOT/../xlib-wayland"
     else
         XLIB_WAYLAND="$CDE_CACHE/src/xlib-wayland"

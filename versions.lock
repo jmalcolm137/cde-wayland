@@ -7,9 +7,9 @@
 
 # xlib-wayland — the Wayland libX11 shim.  All shim accommodations for CDE are
 # made in THIS repository, not here; we only consume it.
-# main, 2026-10-15 (Firefox/EWMH/headless-compositor work).
+# main, 2026-11-22 (sixth review: perf, memory, and Xorg correctness overhaul).
 XLIB_WAYLAND_REPO=https://github.com/jmalcolm137/xlib-wayland.git
-XLIB_WAYLAND_REF=bf07693e94479200e1cf93cdb7cbcc844aae281f
+XLIB_WAYLAND_REF=498beebc6484ef052fb1145a37ae55dc4ef6cca6
 # Requires at least:
 #   b9a3142  XOpenDisplay reports an X display string (DtSvc parses it)
 #   a8c2a3e  Xmb/XwcTextExtents fill ink and logical independently

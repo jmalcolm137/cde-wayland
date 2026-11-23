@@ -59,11 +59,20 @@ fi
 # in force at the next login.  (CDE would restore it from its saved session with
 # dtsession_res -> xrdb, neither of which works in this architecture.)
 _cde_state="${XDG_STATE_HOME:-$HOME/.local/state}/cde-wayland"
-_shp="${XDG_RUNTIME_DIR:-/tmp}/xlib-wayland/smprops"
+if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
+    _shd="$XDG_RUNTIME_DIR/xlib-wayland"
+else
+    _shd="/tmp/xlib-wayland-$(id -u)"
+fi
+_shp="$_shd/smprops"
 if [ "${CDE_KEEP_PALETTE:-1}" = 1 ] && [ -f "$_cde_state/resource-manager" ]; then
     if ! grep -q '^RESOURCE_MANAGER' "$_shp" 2>/dev/null; then
-        mkdir -p "$(dirname "$_shp")" 2>/dev/null || true
+        # xlib-wayland's mw_runtime_dir() rejects any shared directory with
+        # group/other permission bits, so create and enforce mode 0700.
+        mkdir -p -m 0700 "$_shd" 2>/dev/null || true
+        chmod 0700 "$_shd" 2>/dev/null || true
         cat "$_cde_state/resource-manager" >>"$_shp" 2>/dev/null || true
+        chmod 0600 "$_shp" 2>/dev/null || true
     fi
 fi
 
@@ -90,7 +99,6 @@ fi
 # panel (bounded, and skipped when the property is not being relayed).
 case ",${XLIB_WAYLAND_SHARE_PROPERTIES-}," in
     *,RESOURCE_MANAGER,*)
-        _shp="${XDG_RUNTIME_DIR:-/tmp}/xlib-wayland/smprops"
         _waited=0
         while [ "$_waited" -lt 100 ]; do
             grep -q '^RESOURCE_MANAGER' "$_shp" 2>/dev/null && break
