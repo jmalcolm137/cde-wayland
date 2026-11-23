@@ -279,10 +279,11 @@ dtwm-style icon box would need CoW to expose icons as a managed container.
   CDE/MWM key bindings (Alt+Space window menu, Alt+Tab/Alt+F6 next/prev,
   Alt+F3 lower, Alt+F4 close, Alt+F5 restore, Alt+F7 move, Alt+F8 size,
   Alt+F9 minimize, Alt+F10 maximize).
-* **Transient stacking (CoW patch, done).** Raising a window raises the views
-  whose `WM_TRANSIENT_FOR` is that window, so a dialog stays directly above the
-  application window it belongs to (patches/cow-transient-stacking.patch).
-  Verified: click the main window and its dialog stays on top.
+* **Transient stacking (upstream CoW, done).** Upstream CoW's `cow_stack_apply()`
+  walks `cow_container_ancestor()` and sorts transients (`WM_TRANSIENT_FOR`)
+  above their parent (inheriting its `raise_seq` and effective layer), so a
+  dialog stays directly above the application window it belongs to without any
+  local CoW patch.
 * **Per-workspace backdrop (done).** In CDE dtwm draws a full-screen
   override-redirect backdrop per workspace; the shim keeps those out of the
   Wayland tree (they were painting the screen), and the desktop is drawn by CoW.

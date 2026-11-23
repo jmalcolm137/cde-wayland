@@ -33,11 +33,10 @@ patches do so.
 | `rpccmsd-nonroot.patch` | key the private calendar spool off `CDE_CMSD_DIR`, not `euid` |
 | `srvpalette-pixel-set.patch` | the colour server publishes the current pixel set instead of appending, so applications get a usable palette |
 
-## CoW patches — `ISC`
+## CoW patches
 
-CoW is released under the ISC License (Copyright (c) 2026 Thomas Adam).  The
-patches retain the upstream notice and are made available under the same terms.
-
-| Patch | Modification |
-|---|---|
-| `cow-transient-stacking.patch` | transient stacking |
+None — CoW is built completely unpatched from upstream.  The earlier
+`cow-decoration-hint.patch` was replaced by full `_MOTIF_WM_HINTS` support in
+`xlib-wayland` plus CoW's native sparse `decor` profiles, and
+`cow-transient-stacking.patch` was superseded by upstream CoW's
+`cow_stack_apply()` transient ordering.

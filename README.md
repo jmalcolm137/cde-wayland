@@ -79,11 +79,9 @@ carries that project's licence instead.
   released under the **LGPL-2.0-or-later**. CDE's `COPYING` requires that
   modifications to it be made available under the same terms, so those patches
   are licensed the same way and carry a change notice each.
-* The **CoW patches** modify [CoW](https://codeberg.org/cow-wm/cow), which is
-  released under the **ISC License**; they retain the upstream notice.
 
-See [`patches/README.md`](patches/README.md) for the full split.
+See [`patches/README.md`](patches/README.md) for the full list.
 
-No CDE or CoW source is redistributed here — the overlays are diffs, applied to
+No CDE source is redistributed here — the overlays are diffs, applied to
 a pristine tree by `build-cde.sh` — so CDE's media clause (icons, images and
 documentation under CC BY-SA 3.0, attribution "The Open Group") does not apply.
