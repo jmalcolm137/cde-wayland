@@ -1,23 +1,20 @@
 # Patch overlays
 
 Small diffs applied by [`../scripts/build-cde.sh`](../scripts/build-cde.sh) to a
-pristine source tree:
+pristine CDE source tree:
 
     patch -p1 --forward --batch -d "$CDE_BUILD" < <patch>
 
 The source tree is never edited in place, and the long-term goal is to carry
 none of these — they exist to be landed upstream.
 
-Each patch modifies **another project**, so it carries *that* project's licence
-rather than this repository's MIT.  The SPDX tag and a change notice are at the
-top of every file.
-
 ## CDE patches — `LGPL-2.0-or-later`
 
 CDE is released under the GNU Lesser General Public License, version 2.0 or (at
 your option) any later version, and its `COPYING` states plainly that
-modifications to CDE must be made available under the same terms.  These
-patches do so.
+modifications to CDE must be made available under the same terms.  These patches
+carry CDE's licence rather than this repository's MIT; the SPDX tag and a change
+notice are at the top of every file.
 
 | Patch | Modification |
 |---|---|
@@ -32,11 +29,3 @@ patches do so.
 | `dtwm-wsm-list.patch` | read CoW's desks from dtwm |
 | `rpccmsd-nonroot.patch` | key the private calendar spool off `CDE_CMSD_DIR`, not `euid` |
 | `srvpalette-pixel-set.patch` | the colour server publishes the current pixel set instead of appending, so applications get a usable palette |
-
-## CoW patches
-
-None — CoW is built completely unpatched from upstream.  The earlier
-`cow-decoration-hint.patch` was replaced by full `_MOTIF_WM_HINTS` support in
-`xlib-wayland` plus CoW's native sparse `decor` profiles, and
-`cow-transient-stacking.patch` was superseded by upstream CoW's
-`cow_stack_apply()` transient ordering.
