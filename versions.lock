@@ -7,9 +7,9 @@
 
 # xlib-wayland — the Wayland libX11 shim.  All shim accommodations for CDE are
 # made in THIS repository, not here; we only consume it.
-# main, 2026-11-22 (sixth review: perf, memory, and Xorg correctness overhaul).
+# main, 2026-11-23 (full _MOTIF_WM_HINTS decoration and function support).
 XLIB_WAYLAND_REPO=https://github.com/jmalcolm137/xlib-wayland.git
-XLIB_WAYLAND_REF=498beebc6484ef052fb1145a37ae55dc4ef6cca6
+XLIB_WAYLAND_REF=b8d7d0c3d9f06256c4d38790c9650ebf6b3b0996
 # Requires at least:
 #   b9a3142  XOpenDisplay reports an X display string (DtSvc parses it)
 #   a8c2a3e  Xmb/XwcTextExtents fill ink and logical independently
