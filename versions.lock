@@ -22,10 +22,10 @@ XLIB_WAYLAND_REF=498beebc6484ef052fb1145a37ae55dc4ef6cca6
 CDE_REPO=https://github.com/lkujaw/cde.git
 CDE_REF=e4b43aa1c4dacf72ceab6bfe73f1414396928883
 
-# CoW window manager (River client).  CoW 0.4 was released 2026-10-25; this is
-# main at that point plus the post-release version-string commit.
+# CoW window manager (River client).  main, 2026-11-22 (unified frame ownership
+# via cow_view_has_frame()/cow_view_reconcile_frame()).
 COW_REPO=https://codeberg.org/cow-wm/cow.git
-COW_REF=fd999be6af4f87f82d061565bf2b2638f748e31c
+COW_REF=309a008598343d6a73d77b3679cd74e7d37968c3
 
 # River compositor.  CDE-on-Wayland is tested against the distro package
 # (Arch: river 0.5.0); the tag pins the source build (`build-cow.sh

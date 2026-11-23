@@ -40,5 +40,5 @@ patches retain the upstream notice and are made available under the same terms.
 
 | Patch | Modification |
 |---|---|
-| `cow-decoration-hint.patch` | honour MWM decoration hints |
+| `cow-decoration-hint.patch` | honour River `PREFERS_CSD` decoration hint on standalone windows during manage (covers borderless `decorations=0` windows; containers keep shared-frame ownership) |
 | `cow-transient-stacking.patch` | transient stacking |
