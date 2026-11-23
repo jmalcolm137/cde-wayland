@@ -70,7 +70,8 @@ test: test-shim
 
 test-shim:
 	meson setup "$(XLIB_WAYLAND)/build" "$(XLIB_WAYLAND)" \
-		--prefix="$(PREFIX)" --buildtype=release --reconfigure
+		--prefix="$(PREFIX)" --buildtype=release \
+		$$(test -f "$(XLIB_WAYLAND)/build/build.ninja" && echo --reconfigure)
 	ninja -C "$(XLIB_WAYLAND)/build"
 	meson test -C "$(XLIB_WAYLAND)/build" --print-errorlogs
 
@@ -79,7 +80,9 @@ test-session:
 
 lint:
 	@for f in scripts/*.sh; do bash -n "$$f" || exit 1; done
-	@if command -v shellcheck >/dev/null 2>&1; then shellcheck -S warning scripts/*.sh; \
+	@for f in config/*.sh config/river-init; do sh -n "$$f" || exit 1; done
+	@if command -v shellcheck >/dev/null 2>&1; then \
+	    shellcheck -S warning scripts/*.sh config/*.sh config/river-init; \
 	  else echo "shellcheck not installed; skipped"; fi
 	scripts/test-dt-database.sh
 

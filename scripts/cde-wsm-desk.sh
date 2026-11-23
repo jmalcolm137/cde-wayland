@@ -41,9 +41,18 @@ if [ "$_has_moocow" = 1 ]; then
     else
         _conf="${CDE_ROOT:-/usr/dt}/config/backdrops.conf"
         if [ -f "$_conf" ]; then
-            line=$(awk -v i="$idx" '$1 == i { print; exit }' "$_conf" 2>/dev/null)
-            colour=$(printf '%s\n' "$line" | awk '{ print $2 }')
-            image=$(printf '%s\n' "$line" | awk '{ print $3 }')
+            colour=""
+            image=""
+            while read -r _i _c _img _; do
+                case "$_i" in
+                    ''|'#'*) continue ;;
+                esac
+                if [ "$_i" = "$idx" ]; then
+                    colour="$_c"
+                    image="$_img"
+                    break
+                fi
+            done < "$_conf"
             # Allow the configured path to be relative to the CDE root.
             case "$image" in
                 '$CDE_ROOT'*) image="${CDE_ROOT:-/usr/dt}${image#\$CDE_ROOT}" ;;

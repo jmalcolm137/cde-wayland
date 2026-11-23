@@ -44,71 +44,9 @@ if [ -f "$PROJECT_ROOT/scripts/cde-wsm-desk.sh" ]; then
     ok "installed cde-wsm-desk (Workspace Manager bridge)"
 fi
 
-# Workspace Manager client: runs dtwm's own workspace functions (the root
-# menu's Previous/Next Workspace) by asking the WSM to change, so the Front
-# Panel and every other client stay in step.  Compiled here rather than added
-# to the CDE tree because it is a cde-wayland helper, not part of CDE.
-if [ -f "$PROJECT_ROOT/tools/cde-wsm.c" ]; then
-    if "${CC:-gcc}" -o "$CDE_PREFIX/bin/cde-wsm" "$PROJECT_ROOT/tools/cde-wsm.c" \
-            -I"$CDE_PREFIX/dt/include" -I"$CDE_PREFIX/include" -I/usr/include/tirpc \
-            -L"$CDE_PREFIX/dt/lib" -L"$CDE_PREFIX/lib" \
-            -lDtSvc -ltt -lXm -lXt -lX11 \
-            -Wl,-rpath,"$CDE_PREFIX/lib:$CDE_PREFIX/dt/lib" 2>/dev/null; then
-        ok "installed cde-wsm (Workspace Manager client)"
-    else
-        warn "could not build cde-wsm; CoW's workspace menu will not work"
-    fi
-fi
-
-# Logout confirmation dialog: the Front Panel's Exit runs cde-logout in a shell,
-# which has no way to post a Motif dialog of its own.  dtsession cannot post it
-# either (no shared X server), so cde-confirm is the client cde-logout uses.  The
-# Style Manager's Startup module decides whether it is shown.
-if [ -f "$PROJECT_ROOT/tools/cde-confirm.c" ]; then
-    if "${CC:-gcc}" -o "$CDE_PREFIX/bin/cde-confirm" "$PROJECT_ROOT/tools/cde-confirm.c" \
-            -I"$CDE_PREFIX/dt/include" -I"$CDE_PREFIX/include" -I/usr/include/tirpc \
-            -L"$CDE_PREFIX/dt/lib" -L"$CDE_PREFIX/lib" \
-            -lXm -lXt -lX11 \
-            -Wl,-rpath,"$CDE_PREFIX/lib:$CDE_PREFIX/dt/lib" 2>/dev/null; then
-        ok "installed cde-confirm (logout confirmation)"
-    else
-        warn "could not build cde-confirm; logout will not ask for confirmation"
-    fi
-fi
-
-# Frame and menu colours for CoW: it draws the desktop chrome but is not an X
-# client, so it cannot read the palette dtsession's colour server publishes.
-# This client reads it the way CDE's own dtwm does and prints the colours, which
-# cde-cow-colours hands to CoW.
-if [ -f "$PROJECT_ROOT/tools/cde-palette-colours.c" ]; then
-    if "${CC:-gcc}" -o "$CDE_PREFIX/bin/cde-palette-colours" \
-            "$PROJECT_ROOT/tools/cde-palette-colours.c" \
-            -I"$CDE_PREFIX/dt/include" -I"$CDE_PREFIX/include" -I/usr/include/tirpc \
-            -L"$CDE_PREFIX/dt/lib" -L"$CDE_PREFIX/lib" \
-            -lXm -lXt -lX11 \
-            -Wl,-rpath,"$CDE_PREFIX/lib:$CDE_PREFIX/dt/lib" 2>/dev/null; then
-        ok "installed cde-palette-colours (CDE frame/menu colours)"
-    else
-        warn "could not build cde-palette-colours; CoW keeps its own colours"
-    fi
-fi
-
-# xrdb, built against the shim.  dtsession restores the session's resources by
-# running dtsession_res, which pipes CDE's sys.resources and ~/.Xdefaults into
-# xrdb; without one that step fails, and the system xrdb cannot stand in because
-# it is linked against the system libX11 and would talk to Xwayland instead of
-# the shim.  This one writes RESOURCE_MANAGER on its own root, which the shim
-# publishes to the shared store, so the resources reach every client started
-# afterwards.
-if [ -f "$PROJECT_ROOT/tools/xrdb.c" ]; then
-    if "${CC:-gcc}" -o "$CDE_PREFIX/bin/xrdb" "$PROJECT_ROOT/tools/xrdb.c" \
-            -I"$CDE_PREFIX/include" -L"$CDE_PREFIX/lib" \
-            -lX11 -Wl,-rpath,"$CDE_PREFIX/lib" 2>/dev/null; then
-        ok "installed xrdb (dtsession_res can load resources)"
-    else
-        warn "could not build xrdb; dtsession_res will keep failing"
-    fi
-fi
+# Build and install the CDE/Motif/X11 helper tools (cde-wsm, cde-confirm,
+# cde-palette-colours, xrdb).
+"$PROJECT_ROOT/scripts/build-tools.sh" --cde
 
 # Root-menu helpers: "Restart Workspace Manager..." and "Log out...".
 for h in cde-restart-dtwm.sh cde-logout.sh cde-toggle-frontpanel.sh cde-wsm-backdrop.sh cde-motif-apply.sh cde-session-save.sh cde-session-restore.sh cde-palette-watch.sh cde-cow-colours.sh; do

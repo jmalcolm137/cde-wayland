@@ -23,11 +23,14 @@ set -u
 : "${CDE_ROOT:=/usr/dt}"
 export PATH="$CDE_ROOT/bin:$PATH"
 
-if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
+if [ -n "${CDE_SHIM_SMPROPS:-}" ]; then
+    store="$CDE_SHIM_SMPROPS"
+elif [ -n "${XDG_RUNTIME_DIR:-}" ]; then
     store="$XDG_RUNTIME_DIR/xlib-wayland/smprops"
 else
     store="/tmp/xlib-wayland-$(id -u)/smprops"
 fi
+store_dir="$(dirname "$store")"
 ds_log="${XDG_RUNTIME_DIR:-/tmp}/cde-wayland/dtsession.log"
 
 # The property holds just the palette (*0*ColorPalette, *background,
@@ -57,9 +60,30 @@ rm_sig() { grep -a '^RESOURCE_MANAGER' "$store" 2>/dev/null | head -1; }
 
 # The panel watcher must not outlive the session: a leftover instance would see
 # the next session's palette as a change and restart its colour server.  CoW is
-# the session's window manager and is not restarted on its own, so use it as the
-# liveness signal (a watcher orphaned by a hard session teardown exits here).
-session_alive() { pgrep -x cow >/dev/null 2>&1; }
+# the session's window manager and is not restarted on its own, so cache its PID
+# and check it with kill -0 instead of forking pgrep every wakeup.
+cow_pid="$(pgrep -x cow 2>/dev/null | head -1)"
+session_alive() {
+    if [ -n "$cow_pid" ]; then
+        kill -0 "$cow_pid" 2>/dev/null
+    else
+        pgrep -x cow >/dev/null 2>&1
+    fi
+}
+
+store_stamp() {
+    stat -c '%Y:%s' "$store" 2>/dev/null || echo ""
+}
+
+has_inotify=0
+command -v inotifywait >/dev/null 2>&1 && has_inotify=1
+wait_store_change() {
+    if [ "$has_inotify" = 1 ] && [ -d "$store_dir" ]; then
+        inotifywait -qq -t 5 -e close_write,moved_to,create "$store_dir" 2>/dev/null || true
+    else
+        sleep 2
+    fi
+}
 
 restart_colour_server_and_panel() {
     pkill -x dtsession 2>/dev/null
@@ -111,8 +135,17 @@ done
 save_palette
 
 prev_rm=""
+prev_stamp=""
 while :; do
     session_alive || exit 0
+    # Skip grepping smprops when neither its mtime nor size changed.
+    cur_stamp="$(store_stamp)"
+    if [ "$cur_stamp" = "$prev_stamp" ]; then
+        wait_store_change
+        continue
+    fi
+    prev_stamp="$cur_stamp"
+
     # Record the palette whenever the relayed database changes, independently of
     # whether a restart is needed, so the durable copy cannot lag behind.
     cur_rm="$(rm_sig)"
@@ -120,9 +153,11 @@ while :; do
         prev_rm="$cur_rm"
         save_palette "$cur_rm"
     fi
-    sleep 2
     cur="$(sig)"
-    [ "$cur" = "$prev" ] && continue
+    if [ "$cur" = "$prev" ]; then
+        wait_store_change
+        continue
+    fi
     prev="$cur"
 
     # CoW's own chrome can follow at once: cde-cow-colours reads the palette from

@@ -15,13 +15,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Bash syntax
-        run: for f in scripts/*.sh; do bash -n "$f"; done
+      - name: Shell syntax
+        run: |
+          for f in scripts/*.sh; do bash -n "$f"; done
+          for f in config/*.sh config/river-init; do sh -n "$f"; done
       - name: ShellCheck
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq shellcheck
-          shellcheck -S warning scripts/*.sh
+          shellcheck -S warning scripts/*.sh config/*.sh config/river-init
 
   pins:
     name: pinned revisions
@@ -44,12 +46,14 @@ jobs:
             libpng pixman \
             libx11 libxext libxrender libxcb libxi libxft libxt libxau libxcursor \
             libxdamage libxfixes libxrandr libxinerama libxcomposite xorgproto
-      - name: Check out the pinned shim
-        uses: actions/checkout@v4
-        with:
-          repository: jmalcolm137/xlib-wayland
-          ref: 498beebc6484ef052fb1145a37ae55dc4ef6cca6
-          path: xlib-wayland
+      - uses: actions/checkout@v4
+      - name: Fetch the pinned shim
+        run: |
+          source versions.lock
+          git init xlib-wayland
+          git -C xlib-wayland remote add origin "$XLIB_WAYLAND_REPO"
+          git -C xlib-wayland fetch --depth 1 origin "$XLIB_WAYLAND_REF"
+          git -C xlib-wayland checkout -q FETCH_HEAD
       - name: Build
         run: |
           meson setup xlib-wayland/build xlib-wayland \
@@ -69,11 +73,13 @@ jobs:
             base-devel git meson ninja pkgconf \
             wayland wayland-protocols libxkbcommon pango cairo libbsd \
             bison flex libevent libxml2
+      - uses: actions/checkout@v4
       - name: Fetch the pinned revision
         run: |
+          source versions.lock
           git init cow
-          git -C cow remote add origin https://codeberg.org/cow-wm/cow.git
-          git -C cow fetch --depth 1 origin fd999be6af4f87f82d061565bf2b2638f748e31c
+          git -C cow remote add origin "$COW_REPO"
+          git -C cow fetch --depth 1 origin "$COW_REF"
           git -C cow checkout -q FETCH_HEAD
       - name: Build
         run: |

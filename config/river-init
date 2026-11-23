@@ -11,9 +11,11 @@ set -eu
 : "${CDE_PREFIX:=${HOME}/.local/cde-wayland}"
 _dir="$(cd -- "$(dirname -- "$0")" && pwd -P)"
 if [ -f "$_dir/cde-env.sh" ]; then
+    # shellcheck source=/dev/null
     . "$_dir/cde-env.sh"
 fi
 if [ -f "$CDE_PREFIX/share/cde-wayland/cde-env.sh" ]; then
+    # shellcheck source=/dev/null
     . "$CDE_PREFIX/share/cde-wayland/cde-env.sh"
 fi
 

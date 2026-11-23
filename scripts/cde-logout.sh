@@ -35,7 +35,9 @@ fi
 # into the shim's shared-property store, which is under XDG_RUNTIME_DIR and does
 # not survive.  cde-session.sh puts this copy back before dtsession starts.
 _state="${XDG_STATE_HOME:-$HOME/.local/state}/cde-wayland"
-if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
+if [ -n "${CDE_SHIM_SMPROPS:-}" ]; then
+    _shp="$CDE_SHIM_SMPROPS"
+elif [ -n "${XDG_RUNTIME_DIR:-}" ]; then
     _shp="$XDG_RUNTIME_DIR/xlib-wayland/smprops"
 else
     _shp="/tmp/xlib-wayland-$(id -u)/smprops"
@@ -46,13 +48,29 @@ if [ -n "$_pal" ]; then
     printf '%s\n' "$_pal" >"$_state/resource-manager" 2>/dev/null || true
 fi
 
-# The palette watcher restarts dtsession and dtwm; it must not outlive the
-# session, or it would interfere with the next one.
-pkill -f '^/bin/sh .*/cde-palette-watch$' 2>/dev/null
-pkill -x dtsession 2>/dev/null
-pkill -x dtwm      2>/dev/null
-pkill -x rpc.cmsd  2>/dev/null
-pkill -x cow       2>/dev/null
-sleep 1
-pkill -x river     2>/dev/null
-pkill -x ttsession 2>/dev/null
+# Stop this session's processes without killing an unrelated outer compositor.
+# When run-session.sh recorded the session leader (ttsession), signal its
+# descendants; fall back to name-based pkill only if no PID file is present.
+_rt_dir="${XDG_RUNTIME_DIR:-/tmp}/cde-wayland"
+_spid="$(cat "$_rt_dir/session.pid" 2>/dev/null || true)"
+if [ -n "$_spid" ] && kill -0 "$_spid" 2>/dev/null; then
+    pkill -P "$_spid" -f '^/bin/sh .*/cde-palette-watch$' 2>/dev/null || true
+    # Walk session descendants: stop clients/daemons first, then compositor.
+    for _proc in dtsession dtwm rpc.cmsd cow; do
+        pkill -x "$_proc" -s "$(ps -o sid= -p "$_spid" 2>/dev/null | tr -d ' ')" 2>/dev/null || true
+    done
+    sleep 1
+    kill "$_spid" 2>/dev/null || true
+    _pmpid="$(cat "$_rt_dir/tt-portmapper.pid" 2>/dev/null || true)"
+    [ -n "$_pmpid" ] && kill "$_pmpid" 2>/dev/null || true
+    rm -f "$_rt_dir/session.pid" "$_rt_dir/tt-portmapper.pid"
+else
+    pkill -f '^/bin/sh .*/cde-palette-watch$' 2>/dev/null || true
+    pkill -x dtsession 2>/dev/null || true
+    pkill -x dtwm      2>/dev/null || true
+    pkill -x rpc.cmsd  2>/dev/null || true
+    pkill -x cow       2>/dev/null || true
+    sleep 1
+    pkill -x river     2>/dev/null || true
+    pkill -x ttsession 2>/dev/null || true
+fi

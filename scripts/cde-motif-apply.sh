@@ -9,13 +9,13 @@
 # Usage: cde-motif-apply decor -a PROFILE -t SELECTOR
 set -u
 
-i=0
-while [ "$i" -lt 40 ]; do
+# Retry with exponential-ish backoff (~2s total, 16 tries instead of 40) so
+# windows that register within a frame finish fast without hammering moocow.
+for delay in 0.02 0.02 0.05 0.05 0.05 0.1 0.1 0.1 0.15 0.15 0.2 0.2 0.2 0.2 0.2 0.2; do
     out=$(moocow "$@" 2>/dev/null)
     case "$out" in
         *'"ok":'*true*) exit 0 ;;
     esac
-    i=$((i + 1))
-    sleep 0.05
+    sleep "$delay"
 done
 exit 0

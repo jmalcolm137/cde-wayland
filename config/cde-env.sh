@@ -92,6 +92,16 @@ export XLIB_WAYLAND_SHARE_SELECTIONS="${XLIB_WAYLAND_SHARE_SELECTIONS-Customize 
 # config/Xresources.
 export XLIB_WAYLAND_SHARE_PROPERTIES="${XLIB_WAYLAND_SHARE_PROPERTIES-_DT_SM_,RESOURCE_MANAGER}"
 
+# Single source of truth for the shim's shared runtime directory and property
+# store (matches xlib-wayland src/xlib/fdio.c:mw_runtime_dir()).
+if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
+    CDE_SHIM_RUNTIME_DIR="${CDE_SHIM_RUNTIME_DIR:-$XDG_RUNTIME_DIR/xlib-wayland}"
+else
+    CDE_SHIM_RUNTIME_DIR="${CDE_SHIM_RUNTIME_DIR:-/tmp/xlib-wayland-$(id -u)}"
+fi
+CDE_SHIM_SMPROPS="${CDE_SHIM_SMPROPS:-$CDE_SHIM_RUNTIME_DIR/smprops}"
+export CDE_SHIM_RUNTIME_DIR CDE_SHIM_SMPROPS
+
 # Keyboard layout.  Applications take their X keymap from the compositor; when
 # it has no physical keyboard (the nested test session) the shim builds one from
 # XKB_DEFAULT_*, and River uses the same names for its seat.  The "intl" variant

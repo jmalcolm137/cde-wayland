@@ -45,11 +45,13 @@ tmp="$(mktemp "${TMPDIR:-/tmp}/cde-session.XXXXXX")"
 trap 'rm -f "$tmp"' EXIT
 
 count=0
-for envf in /proc/[0-9]*/environ; do
+# Filter matching PIDs in a single grep pass rather than forking grep per PID.
+mapfile -t env_matches < <(
+    grep -lz "CDE_SESSION_TAG=$CDE_SESSION_TAG" /proc/[0-9]*/environ 2>/dev/null || true
+)
+for envf in "${env_matches[@]}"; do
     pid="${envf#/proc/}"; pid="${pid%/environ}"
-    # Only processes that belong to this session.  grep opens the file itself,
-    # so another user's /proc entry fails quietly instead of the shell reporting
-    # the redirection error.
+    # Verify an exact NUL-delimited entry (not a prefix match).
     grep -zqx "CDE_SESSION_TAG=$CDE_SESSION_TAG" "$envf" 2>/dev/null || continue
     # Command line and cwd of the client.
     cmdline="$(tr '\0' ' ' <"/proc/$pid/cmdline" 2>/dev/null || true)"
@@ -70,6 +72,7 @@ done
 
 # De-duplicate (two processes with the same command in the same directory are
 # the same restored client) and write atomically.
-sort -u "$tmp" >"$file"
+sort -u "$tmp" >"$file.tmp"
+mv -f "$file.tmp" "$file"
 printf 'cde-session-save: %d running client(s) saved to %s\n' "$count" "$file" >&2
 cat "$file" >&2

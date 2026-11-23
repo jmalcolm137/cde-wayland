@@ -17,10 +17,10 @@
 # whenever it changes.
 set -u
 : "${CDE_ROOT:=/usr/dt}"
-export PATH="$CDE_ROOT/bin:$PATH"
+export PATH="$CDE_ROOT/bin:${CDE_PREFIX:+$CDE_PREFIX/bin:}$PATH"
 
 command -v moocow >/dev/null 2>&1 || exit 0
-[ -x "$CDE_ROOT/bin/cde-palette-colours" ] || exit 0
+command -v cde-palette-colours >/dev/null 2>&1 || exit 0
 
 # KEY=#rrggbb lines only, so an incidental message cannot be eval'd.
 vals="$(cde-palette-colours 2>/dev/null | grep -E '^[a-z_]+=#[0-9a-fA-F]{6}$')" || exit 0
@@ -30,29 +30,35 @@ eval "$vals"
     [ -n "${inactive_bg:-}" ] && [ -n "${inactive_fg:-}" ] && \
     [ -n "${primary_bg:-}" ] && [ -n "${primary_fg:-}" ] || exit 0
 
-hex() { printf '0x%s' "${1#\#}"; }
+# Convert #rrggbb -> 0xrrggbb in-process (no subshell forks).
+abg="0x${active_bg#\#}"
+afg="0x${active_fg#\#}"
+ibg="0x${inactive_bg#\#}"
+ifg="0x${inactive_fg#\#}"
+pbg="0x${primary_bg#\#}"
+pfg="0x${primary_fg#\#}"
 
 # Frames and minimized icons.
-moocow decor -d default titlebar.active_colour   "$(hex "$active_bg")"    >/dev/null 2>&1
-moocow decor -d default titlebar.fg_active       "$(hex "$active_fg")"    >/dev/null 2>&1
-moocow decor -d default titlebar.inactive_colour "$(hex "$inactive_bg")"  >/dev/null 2>&1
-moocow decor -d default titlebar.fg_inactive     "$(hex "$inactive_fg")"  >/dev/null 2>&1
-moocow decor -d default border.colour            "$(hex "$active_bg")"    >/dev/null 2>&1
-moocow decor -d default icon.background          "$(hex "$active_bg")"    >/dev/null 2>&1
-moocow decor -d default icon.foreground          "$(hex "$active_fg")"    >/dev/null 2>&1
-moocow decor -d default icon.active.background   "$(hex "$active_bg")"    >/dev/null 2>&1
-moocow decor -d default icon.active.foreground   "$(hex "$active_fg")"    >/dev/null 2>&1
+moocow decor -d default titlebar.active_colour   "$abg" >/dev/null 2>&1
+moocow decor -d default titlebar.fg_active       "$afg" >/dev/null 2>&1
+moocow decor -d default titlebar.inactive_colour "$ibg" >/dev/null 2>&1
+moocow decor -d default titlebar.fg_inactive     "$ifg" >/dev/null 2>&1
+moocow decor -d default border.colour            "$abg" >/dev/null 2>&1
+moocow decor -d default icon.background          "$abg" >/dev/null 2>&1
+moocow decor -d default icon.foreground          "$afg" >/dev/null 2>&1
+moocow decor -d default icon.active.background   "$abg" >/dev/null 2>&1
+moocow decor -d default icon.active.foreground   "$afg" >/dev/null 2>&1
 moocow decor -a default >/dev/null 2>&1
 
 # Menus: the client colours, with the active set for titles and the inactive set
 # for the separators and disabled entries.
-moocow menu-style bg             "$(hex "$primary_bg")"    >/dev/null 2>&1
-moocow menu-style fg             "$(hex "$primary_fg")"    >/dev/null 2>&1
-moocow menu-style title.bg       "$(hex "$active_bg")"     >/dev/null 2>&1
-moocow menu-style title.fg       "$(hex "$active_fg")"     >/dev/null 2>&1
-moocow menu-style border.colour  "$(hex "$active_bg")"     >/dev/null 2>&1
-moocow menu-style separator      "$(hex "$inactive_bg")"   >/dev/null 2>&1
-moocow menu-style disabled       "$(hex "$inactive_bg")"   >/dev/null 2>&1
+moocow menu-style bg             "$pbg" >/dev/null 2>&1
+moocow menu-style fg             "$pfg" >/dev/null 2>&1
+moocow menu-style title.bg       "$abg" >/dev/null 2>&1
+moocow menu-style title.fg       "$afg" >/dev/null 2>&1
+moocow menu-style border.colour  "$abg" >/dev/null 2>&1
+moocow menu-style separator      "$ibg" >/dev/null 2>&1
+moocow menu-style disabled       "$ibg" >/dev/null 2>&1
 # Explicitly leave the side strip off: it is drawn only when it has a colour,
 # and it is 24px wide (side.width), so giving it one makes every menu wider.
-moocow menu-style side.colour    none                      >/dev/null 2>&1
+moocow menu-style side.colour    none   >/dev/null 2>&1

@@ -14,9 +14,11 @@ set -eu
 # (running from the source tree).
 _dir="$(cd -- "$(dirname -- "$0")" && pwd -P)"
 if [ -f "$_dir/cde-env.sh" ]; then
+    # shellcheck source=/dev/null
     . "$_dir/cde-env.sh"
 fi
 if [ -f "$CDE_PREFIX/share/cde-wayland/cde-env.sh" ]; then
+    # shellcheck source=/dev/null
     . "$CDE_PREFIX/share/cde-wayland/cde-env.sh"
 fi
 
@@ -59,12 +61,14 @@ fi
 # in force at the next login.  (CDE would restore it from its saved session with
 # dtsession_res -> xrdb, neither of which works in this architecture.)
 _cde_state="${XDG_STATE_HOME:-$HOME/.local/state}/cde-wayland"
-if [ -n "${XDG_RUNTIME_DIR:-}" ]; then
+if [ -n "${CDE_SHIM_RUNTIME_DIR:-}" ]; then
+    _shd="$CDE_SHIM_RUNTIME_DIR"
+elif [ -n "${XDG_RUNTIME_DIR:-}" ]; then
     _shd="$XDG_RUNTIME_DIR/xlib-wayland"
 else
     _shd="/tmp/xlib-wayland-$(id -u)"
 fi
-_shp="$_shd/smprops"
+_shp="${CDE_SHIM_SMPROPS:-$_shd/smprops}"
 if [ "${CDE_KEEP_PALETTE:-1}" = 1 ] && [ -f "$_cde_state/resource-manager" ]; then
     if ! grep -q '^RESOURCE_MANAGER' "$_shp" 2>/dev/null; then
         # xlib-wayland's mw_runtime_dir() rejects any shared directory with

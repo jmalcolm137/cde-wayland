@@ -18,21 +18,75 @@
 #include <X11/Intrinsic.h>
 #include <Dt/Wsm.h>
 #include <Tt/tt_c.h>
+#include <errno.h>
+#include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
-/* ToolTalk requests are asynchronous.  Process Xt events (which include the
- * ToolTalk socket) for a short while so the request reaches the Workspace
- * Manager and its reply is consumed before this short-lived client exits. */
+static long long now_ms(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return (long long)ts.tv_sec * 1000LL + ts.tv_nsec / 1000000LL;
+}
+
+/* ToolTalk requests are asynchronous.  Wait on the X and ToolTalk file
+ * descriptors for the reply rather than sleeping a fixed 600ms, exiting once
+ * the exchange settles or the 600ms cap expires. */
 static void settle(XtAppContext app, Display *d)
 {
-    for (int i = 0; i < 60; i++) {
-        while (XtAppPending(app))
+    int xfd = ConnectionNumber(d);
+    int ttfd = tt_fd();
+    long long deadline = now_ms() + 600;
+    int got_reply = 0;
+
+    for (;;) {
+        while (XtAppPending(app)) {
             XtAppProcessEvent(app, XtIMAll);
+            got_reply = 1;
+        }
         XFlush(d);
-        usleep(10000);
+
+        long long rem = deadline - now_ms();
+        if (rem <= 0)
+            break;
+        int wait_ms = got_reply ? 30 : 80;
+        if (wait_ms > rem)
+            wait_ms = (int)rem;
+
+        struct pollfd fds[2];
+        nfds_t nfds = 0;
+        if (xfd >= 0) {
+            fds[nfds].fd = xfd;
+            fds[nfds].events = POLLIN;
+            fds[nfds].revents = 0;
+            nfds++;
+        }
+        if (ttfd >= 0 && ttfd != xfd) {
+            fds[nfds].fd = ttfd;
+            fds[nfds].events = POLLIN;
+            fds[nfds].revents = 0;
+            nfds++;
+        }
+        int r = poll(fds, nfds, wait_ms);
+        if (r < 0) {
+            if (errno == EINTR)
+                continue;
+            break;
+        }
+        if (r == 0)
+            break;
+        /* Drain any ToolTalk messages ready on ttfd. */
+        if (ttfd >= 0) {
+            Tt_message msg = tt_message_receive();
+            if (msg && tt_ptr_error(msg) == TT_OK) {
+                tt_message_destroy(msg);
+                got_reply = 1;
+            }
+        }
     }
 }
 

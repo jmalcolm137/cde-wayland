@@ -35,18 +35,21 @@
 
 static struct pmap maps[MAXMAP];
 static int nmaps;
+static int debug_log;
 
-static void store_map(const struct pmap *m)
+static bool_t store_map(const struct pmap *m)
 {
     for (int i = 0; i < nmaps; i++) {
         if (maps[i].pm_prog == m->pm_prog && maps[i].pm_vers == m->pm_vers &&
             maps[i].pm_prot == m->pm_prot) {
             maps[i].pm_port = m->pm_port;
-            return;
+            return TRUE;
         }
     }
-    if (nmaps < MAXMAP)
-        maps[nmaps++] = *m;
+    if (nmaps >= MAXMAP)
+        return FALSE;
+    maps[nmaps++] = *m;
+    return TRUE;
 }
 
 static void unstore_map(const struct pmap *m)
@@ -74,6 +77,12 @@ static unsigned long find_port(const struct pmap *m)
 static unsigned long find_port_via_rpcb(unsigned long prog, unsigned long vers,
                                         unsigned long prot);
 
+static bool_t xdr_void_proc(XDR *xdrs, ...)
+{
+    (void)xdrs;
+    return xdr_void();
+}
+
 static void pmap_dispatch(struct svc_req *rqstp, SVCXPRT *transp)
 {
     struct pmap m;
@@ -82,7 +91,7 @@ static void pmap_dispatch(struct svc_req *rqstp, SVCXPRT *transp)
 
     switch (rqstp->rq_proc) {
     case PMAPPROC_NULL:
-        svc_sendreply(transp, (xdrproc_t)xdr_void, NULL);
+        svc_sendreply(transp, xdr_void_proc, NULL);
         return;
     case PMAPPROC_SET:
         if (!svc_getargs(transp, (xdrproc_t)xdr_pmap, (char *)&m)) {
@@ -90,9 +99,10 @@ static void pmap_dispatch(struct svc_req *rqstp, SVCXPRT *transp)
             svcerr_decode(transp);
             return;
         }
-        fprintf(stderr, "tt-portmapper: SET prog=%lu vers=%lu prot=%lu port=%lu\n",
-                m.pm_prog, m.pm_vers, m.pm_prot, m.pm_port);
-        store_map(&m);
+        if (debug_log)
+            fprintf(stderr, "tt-portmapper: SET prog=%lu vers=%lu prot=%lu port=%lu\n",
+                    m.pm_prog, m.pm_vers, m.pm_prot, m.pm_port);
+        ok = store_map(&m);
         svc_sendreply(transp, (xdrproc_t)xdr_bool, (char *)&ok);
         return;
     case PMAPPROC_UNSET:
@@ -148,30 +158,46 @@ struct rpcbmap {
 static struct rpcbmap rbmap[MAXMAP];
 static int nrb;
 
-static void store_rpcb(const struct rpcb *m)
+static bool_t store_rpcb(const struct rpcb *m)
 {
+    const char *netid = m->r_netid ? m->r_netid : "";
+    const char *addr = m->r_addr ? m->r_addr : "";
+
     for (int i = 0; i < nrb; i++) {
         if (rbmap[i].prog == m->r_prog && rbmap[i].vers == m->r_vers &&
-            strcmp(rbmap[i].netid, m->r_netid) == 0) {
+            strcmp(rbmap[i].netid, netid) == 0) {
+            char *na = strdup(addr);
+            if (!na)
+                return FALSE;
             free(rbmap[i].addr);
-            rbmap[i].addr = strdup(m->r_addr ? m->r_addr : "");
-            return;
+            rbmap[i].addr = na;
+            return TRUE;
         }
     }
-    if (nrb < MAXMAP) {
-        rbmap[nrb].prog = m->r_prog;
-        rbmap[nrb].vers = m->r_vers;
-        rbmap[nrb].netid = strdup(m->r_netid ? m->r_netid : "");
-        rbmap[nrb].addr = strdup(m->r_addr ? m->r_addr : "");
-        nrb++;
+    if (nrb >= MAXMAP)
+        return FALSE;
+    char *nn = strdup(netid);
+    char *na = strdup(addr);
+    if (!nn || !na) {
+        free(nn);
+        free(na);
+        return FALSE;
     }
+    rbmap[nrb].prog = m->r_prog;
+    rbmap[nrb].vers = m->r_vers;
+    rbmap[nrb].netid = nn;
+    rbmap[nrb].addr = na;
+    nrb++;
+    return TRUE;
 }
 
 static void unstore_rpcb(const struct rpcb *m)
 {
+    const char *netid = m->r_netid ? m->r_netid : "";
+
     for (int i = 0; i < nrb; i++) {
         if (rbmap[i].prog == m->r_prog && rbmap[i].vers == m->r_vers &&
-            strcmp(rbmap[i].netid, m->r_netid) == 0) {
+            strcmp(rbmap[i].netid, netid) == 0) {
             free(rbmap[i].netid);
             free(rbmap[i].addr);
             rbmap[i] = rbmap[--nrb];
@@ -237,7 +263,7 @@ static void rpcb_dispatch(struct svc_req *rqstp, SVCXPRT *transp)
 
     switch (rqstp->rq_proc) {
     case 0: /* RPCB v3/v4 NULL, same number as PMAPPROC_NULL */
-        svc_sendreply(transp, (xdrproc_t)xdr_void, NULL);
+        svc_sendreply(transp, xdr_void_proc, NULL);
         return;
     case RPCBPROC_SET:
         memset(&m, 0, sizeof m);
@@ -245,10 +271,12 @@ static void rpcb_dispatch(struct svc_req *rqstp, SVCXPRT *transp)
             svcerr_decode(transp);
             return;
         }
-        fprintf(stderr, "tt-portmapper: RPCB SET prog=%lu vers=%lu netid=%s addr=%s\n",
-                (unsigned long)m.r_prog, (unsigned long)m.r_vers,
-                m.r_netid ? m.r_netid : "", m.r_addr ? m.r_addr : "");
-        store_rpcb(&m);
+        if (debug_log)
+            fprintf(stderr, "tt-portmapper: RPCB SET prog=%lu vers=%lu netid=%s addr=%s\n",
+                    (unsigned long)m.r_prog, (unsigned long)m.r_vers,
+                    m.r_netid ? m.r_netid : "", m.r_addr ? m.r_addr : "");
+        ok = store_rpcb(&m);
+        svc_freeargs(transp, (xdrproc_t)xdr_rpcb, (char *)&m);
         svc_sendreply(transp, (xdrproc_t)xdr_bool, (char *)&ok);
         return;
     case RPCBPROC_UNSET:
@@ -258,6 +286,7 @@ static void rpcb_dispatch(struct svc_req *rqstp, SVCXPRT *transp)
             return;
         }
         unstore_rpcb(&m);
+        svc_freeargs(transp, (xdrproc_t)xdr_rpcb, (char *)&m);
         svc_sendreply(transp, (xdrproc_t)xdr_bool, (char *)&ok);
         return;
     case RPCBPROC_GETADDR:
@@ -283,6 +312,7 @@ static void rpcb_dispatch(struct svc_req *rqstp, SVCXPRT *transp)
                 res = strdup(a);
             }
         }
+        svc_freeargs(transp, (xdrproc_t)xdr_rpcb, (char *)&m);
         svc_sendreply(transp, (xdrproc_t)xdr_wrapstring, (char *)&res);
         free(res);
         return;
@@ -417,6 +447,9 @@ int main(int argc, char **argv)
         if (!strcmp(argv[i], "-p") && i + 1 < argc)
             port = atoi(argv[++i]);
     }
+
+    const char *dbg = getenv("CDE_DEBUG");
+    debug_log = (dbg && dbg[0] && dbg[0] != '0');
 
     serve_unix_abstract();
     serve(bind_inet(SOCK_DGRAM, AF_INET, port), SOCK_DGRAM, AF_INET, port);

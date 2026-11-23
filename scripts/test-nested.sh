@@ -14,15 +14,24 @@ source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/lib.sh"
 
 LOG="${CDE_TEST_LOG:-/tmp/cde-wayland-test.log}"
 SMOKE_LOG="${CDE_WSM_SMOKE_LOG:-/tmp/cde-wsm-smoke.log}"
+NESTED_PID_FILE="${XDG_RUNTIME_DIR:-/tmp}/cde-wayland/nested.pid"
 
 if [ "${1:-}" = "--stop" ]; then
-    pkill -f '^/bin/sh .*/cde-palette-watch$' 2>/dev/null || true
-    pkill -x dtsession 2>/dev/null || true
-    pkill -x dtwm 2>/dev/null || true
-    pkill -x cow 2>/dev/null || true
-    pkill -x river 2>/dev/null || true
-    pkill -x ttsession 2>/dev/null || true
-    pkill -x tt-portmapper 2>/dev/null || true
+    _npid="$(cat "$NESTED_PID_FILE" 2>/dev/null || true)"
+    if [ -n "$_npid" ] && kill -0 "$_npid" 2>/dev/null; then
+        # Kill the nested session's process group so an outer River/CoW session
+        # on the host is never touched.
+        kill -- -"$_npid" 2>/dev/null || kill "$_npid" 2>/dev/null || true
+        rm -f "$NESTED_PID_FILE"
+    else
+        pkill -f '^/bin/sh .*/cde-palette-watch$' 2>/dev/null || true
+        pkill -x dtsession 2>/dev/null || true
+        pkill -x dtwm 2>/dev/null || true
+        pkill -x cow 2>/dev/null || true
+        pkill -x river 2>/dev/null || true
+        pkill -x ttsession 2>/dev/null || true
+        pkill -x tt-portmapper 2>/dev/null || true
+    fi
     log "stopped the nested session"
     exit 0
 fi
@@ -36,7 +45,13 @@ export CDE_NESTED=1
 
 log "starting a nested session (session log: $LOG)"
 rm -f "$SMOKE_LOG" "$LOG"
-( "$PROJECT_ROOT/scripts/run-session.sh" --nested >>"$LOG" 2>&1 & )
+mkdir -p "$(dirname "$NESTED_PID_FILE")" 2>/dev/null || true
+if command -v setsid >/dev/null 2>&1; then
+    setsid "$PROJECT_ROOT/scripts/run-session.sh" --nested >>"$LOG" 2>&1 &
+    printf '%s\n' "$!" >"$NESTED_PID_FILE"
+else
+    ( "$PROJECT_ROOT/scripts/run-session.sh" --nested >>"$LOG" 2>&1 & )
+fi
 
 # Wait for the smoke test to finish (it prints PASS/FAIL as its last line).
 for _ in $(seq 1 90); do

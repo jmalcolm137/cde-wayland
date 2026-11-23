@@ -86,9 +86,16 @@ stage_prepare() {
 
     if [ "$REFRESH" -eq 1 ] || [ ! -f "$CDE_BUILD/.source-rev" ] || \
        [ "$(cat "$CDE_BUILD/.source-rev" 2>/dev/null)" != "$rev" ]; then
-        require_cmd rsync
-        mkdir -p "$CDE_BUILD"
-        rsync -a --delete --exclude '.git/' "$CDE_TREE/" "$CDE_BUILD/"
+        if [ ! -d "$CDE_BUILD" ]; then
+            # Use reflinks on CoW filesystems (btrfs/XFS) for a fast, near-zero
+            # disk-cost initial copy; remove .git if present in the source root.
+            mkdir -p "$(dirname "$CDE_BUILD")"
+            cp -a --reflink=auto "$CDE_TREE" "$CDE_BUILD"
+            rm -rf "$CDE_BUILD/.git"
+        else
+            require_cmd rsync
+            rsync -a --delete --exclude '.git/' "$CDE_TREE/" "$CDE_BUILD/"
+        fi
         printf '%s\n' "$rev" > "$CDE_BUILD/.source-rev"
     else
         log "build tree is current ($rev); use --refresh to re-copy"

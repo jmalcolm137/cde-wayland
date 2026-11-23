@@ -46,9 +46,10 @@ emit(const char *key, Pixel p)
            c.red >> 8, c.green >> 8, c.blue >> 8);
 }
 
-/* Allocate one of the palette file's "#RRRRGGGGBBBB" colours. */
-static Pixel
-alloc_palette_colour(const char *spec)
+/* Allocate one of the palette file's "#RRRRGGGGBBBB" colours.
+ * Returns 1 on success (including black, pixel 0) and 0 on failure. */
+static int
+alloc_palette_colour(const char *spec, Pixel *out)
 {
     XColor c;
     char buf[16];
@@ -61,7 +62,8 @@ alloc_palette_colour(const char *spec)
         return 0;
     if (!XAllocColor(dpy, cmap, &c))
         return 0;
-    return c.pixel;
+    *out = c.pixel;
+    return 1;
 }
 
 /* Derive a legible foreground the way Motif does for every other widget. */
@@ -117,7 +119,9 @@ from_palette_file(Screen *scr)
         dirs[2] = NULL;
     }
     for (i = 0; dirs[i] && !f; i++) {
-        snprintf(path, sizeof path, "%s/%s", dirs[i], name);
+        int w = snprintf(path, sizeof path, "%s/%s", dirs[i], name);
+        if (w < 0 || (size_t)w >= sizeof path)
+            continue;
         f = fopen(path, "r");
     }
     if (!f)
@@ -143,20 +147,17 @@ from_palette_file(Screen *scr)
         return 0;
 
     {
-        Pixel a = alloc_palette_colour(cols[0]);
-        Pixel in = alloc_palette_colour(cols[1]);
-        Pixel pr = alloc_palette_colour(cols[4]);
+        Pixel a = 0, in = 0, pr = 0;
 
-        if (!a || !in || !pr)
+        if (!alloc_palette_colour(cols[0], &a) ||
+            !alloc_palette_colour(cols[1], &in) ||
+            !alloc_palette_colour(cols[4], &pr))
             return 0;
-        printf("active_bg=#%02lx%02lx%02lx\n",
-               (a >> 16) & 0xff, (a >> 8) & 0xff, a & 0xff);
+        emit("active_bg", a);
         emit("active_fg", foreground_for(scr, a));
-        printf("inactive_bg=#%02lx%02lx%02lx\n",
-               (in >> 16) & 0xff, (in >> 8) & 0xff, in & 0xff);
+        emit("inactive_bg", in);
         emit("inactive_fg", foreground_for(scr, in));
-        printf("primary_bg=#%02lx%02lx%02lx\n",
-               (pr >> 16) & 0xff, (pr >> 8) & 0xff, pr & 0xff);
+        emit("primary_bg", pr);
         emit("primary_fg", foreground_for(scr, pr));
     }
     return 1;
@@ -182,24 +183,23 @@ main(int argc, char **argv)
     if (from_palette_file(scr))
         return 0;
 
-    /* Fallback: the colour server's pixel sets.  These are only fresh once the
-     * colour server has been reopened, so this is not the immediate path. */
+    /* Fallback: the colour server's pixel sets.  Poll up to 2s and return as
+     * soon as XmeGetPixelData() succeeds instead of sleeping unconditionally. */
     for (i = 0; i < 200; i++) {
         while (XtAppPending(app))
             XtAppProcessEvent(app, XtIMAll);
         XFlush(dpy);
+        if (XmeGetPixelData(XScreenNumberOfScreen(scr), &color_use, sets,
+                            &active, &inactive, &primary, &secondary)) {
+            emit("active_bg", sets[active].bg);
+            emit("active_fg", sets[active].fg);
+            emit("inactive_bg", sets[inactive].bg);
+            emit("inactive_fg", sets[inactive].fg);
+            emit("primary_bg", sets[primary].bg);
+            emit("primary_fg", sets[primary].fg);
+            return 0;
+        }
         usleep(10000);
-    }
-
-    if (XmeGetPixelData(XScreenNumberOfScreen(scr), &color_use, sets,
-                        &active, &inactive, &primary, &secondary)) {
-        emit("active_bg", sets[active].bg);
-        emit("active_fg", sets[active].fg);
-        emit("inactive_bg", sets[inactive].bg);
-        emit("inactive_fg", sets[inactive].fg);
-        emit("primary_bg", sets[primary].bg);
-        emit("primary_fg", sets[primary].fg);
-        return 0;
     }
 
     /* No colour server and no palette file: derive from the resource database

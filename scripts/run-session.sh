@@ -66,8 +66,11 @@ if [ "${CDE_SESSION_NS:-0}" != 1 ] && ! portmapper_ok; then
 fi
 
 if [ "${CDE_SESSION_NS:-0}" = 1 ]; then
-    "$CDE_PREFIX/bin/tt-portmapper" >/tmp/tt-portmapper.log 2>&1 &
+    _pm_dir="${XDG_RUNTIME_DIR:-/tmp}/cde-wayland"
+    mkdir -p "$_pm_dir" 2>/dev/null || true
+    "$CDE_PREFIX/bin/tt-portmapper" >"$_pm_dir/tt-portmapper.log" 2>&1 &
     PM_PID=$!
+    printf '%s\n' "$PM_PID" >"$_pm_dir/tt-portmapper.pid" 2>/dev/null || true
     sleep 1
 fi
 cleanup() { [ -n "$PM_PID" ] && kill "$PM_PID" 2>/dev/null || true; }
@@ -187,4 +190,6 @@ fi
 # would otherwise leak in.
 _rt="${XDG_RUNTIME_DIR:-/tmp}"
 rm -f "$_rt/xlib-wayland-keyboard" "$_rt/xlib-wayland-atoms"
+mkdir -p "$_rt/cde-wayland" 2>/dev/null || true
+printf '%s\n' "$$" >"$_rt/cde-wayland/session.pid" 2>/dev/null || true
 exec ttsession "${TT_ARGS[@]}"

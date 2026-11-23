@@ -107,6 +107,13 @@ except Exception as e:
 PY
 )
     rm -f "$_shot"; rm -rf "$_d"
+    # Close the render-check File Manager so it cannot occlude the double-click
+    # test's File Manager window below.
+    if [ -n "$_id" ]; then
+        moocow focus -i "$_id" >/dev/null 2>&1
+        moocow winops -c >/dev/null 2>&1
+        sleep 0.5
+    fi
     case "$_n" in
         ''|*[!0-9]*) _n=-1 ;;
     esac

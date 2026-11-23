@@ -16,8 +16,10 @@ path="${1:-}"
 
 state_dir="${XDG_RUNTIME_DIR:-/tmp}/cde-wayland"
 mkdir -p "$state_dir" 2>/dev/null || true
-# Diagnostic: record what dtstyle asked for (handy when a backdrop does nothing).
-printf '%s\n' "$path" >> "$state_dir/backdrop.calls" 2>/dev/null || true
+# Diagnostic: record what dtstyle asked for when CDE_DEBUG=1.
+if [ "${CDE_DEBUG:-0}" = 1 ]; then
+    printf '%s\n' "$path" >> "$state_dir/backdrop.calls" 2>/dev/null || true
+fi
 
 # dtstyle passes just the bitmap name (no directory, often no extension);
 # resolve it against the backdrop directories, preferring the PNG that
