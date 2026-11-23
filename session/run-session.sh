@@ -10,7 +10,7 @@
 # unprivileged user+network namespace with tools/tt-portmapper, so no root is
 # required.
 set -euo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/lib.sh"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)/build/lib.sh"
 
 NESTED="${CDE_NESTED:-0}"
 for arg in "$@"; do
@@ -25,9 +25,9 @@ export CDE_PREFIX CDE_ROOT
 export PATH="$CDE_PREFIX/bin:$CDE_ROOT/bin:$PATH"
 
 require_cmd river
-command -v cow >/dev/null 2>&1 || die "cow not found; run scripts/build-cow.sh"
+command -v cow >/dev/null 2>&1 || die "cow not found; run build/build-cow.sh"
 [ -x "$CDE_PREFIX/bin/dtwm" ] || warn \
-    "dtwm not installed (the CDE panel): run scripts/build-cde.sh panel"
+    "dtwm not installed (the CDE panel): run build/build-cde.sh panel"
 
 # ---------------------------------------------------------------------------
 # ToolTalk: a portmapper is required.  Prefer a running rpcbind; otherwise run
@@ -62,7 +62,7 @@ fi
 
 if [ "${CDE_SESSION_NS:-0}" != 1 ] && ! portmapper_ok; then
     warn "no portmapper reachable: the Front Panel will not launch applications."
-    warn "Start rpcbind (sudo systemctl start rpcbind) or build scripts/build-tools.sh."
+    warn "Start rpcbind (sudo systemctl start rpcbind) or build build/build-tools.sh."
 fi
 
 if [ "${CDE_SESSION_NS:-0}" = 1 ]; then
@@ -155,7 +155,7 @@ fi
 # every CDE client joins the session directly.  This is what makes the
 # ToolTalk-based apps (File Manager, Mailer, ...) work.
 command -v ttsession >/dev/null 2>&1 || \
-    die "ttsession not found; run scripts/install-panel-data.sh"
+    die "ttsession not found; run build/install-panel-data.sh"
 
 if [ -n "$RIVER_DISPLAY" ]; then
     # River reaches the outer compositor; ttsession itself (and everything it

@@ -1,5 +1,24 @@
 # Changelog
 
+## Unreleased
+
+### Highlights
+
+- **Zero CoW patches** — updated CoW to `309a008` (which includes upstream
+  transient stacking and unified frame ownership) and dropped both
+  `cow-decoration-hint.patch` and `cow-transient-stacking.patch`.
+- **Full `_MOTIF_WM_HINTS` support** — updated `xlib-wayland` to `b8d7d0c`
+  decoding all `MWM_DECOR_*` and `MWM_FUNC_*` flags (including `ALL`
+  inversion), paired with sparse CoW `decor` profiles in `config/cow.conf`.
+- **Hardened C tools & session scripts** — eliminated shell injection in
+  `tools/xrdb.c`, fixed XDR leaks in `tools/tt-portmapper.c`, replaced fixed
+  sleep loops in `tools/cde-wsm.c` and `tools/cde-palette-colours.c`, cut
+  background wakeups in `cde-palette-watch.sh`, and switched logout/nested
+  teardown to session-scoped PID files.
+- **Repository organization** — split the flat `scripts/` directory into
+  `build/`, `session/`, `tests/`, and `demo/`, added `tools/Makefile`, moved
+  `DESIGN.md` into `docs/`, and sourced `versions.lock` directly in CI.
+
 ## 1.0.0-rc1 — 2026-10-26
 
 First release candidate.  A working CDE desktop on Wayland: River as the

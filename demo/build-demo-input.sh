@@ -20,7 +20,7 @@
 # shim's client surfaces, which is very confusing to debug.
 set -eu
 here="$(cd "$(dirname "$0")" && pwd)"
-src="$here/../tools/demo-input"
+src="$here/input"
 prefix="${CDE_PREFIX:-$HOME/.local/motif-wayland}"
 bindir="$prefix/bin"
 

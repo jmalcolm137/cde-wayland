@@ -17,13 +17,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Shell syntax
         run: |
-          for f in scripts/*.sh; do bash -n "$f"; done
+          for f in build/*.sh session/*.sh tests/*.sh demo/*.sh; do bash -n "$f"; done
           for f in config/*.sh config/river-init; do sh -n "$f"; done
       - name: ShellCheck
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y -qq shellcheck
-          shellcheck -S warning scripts/*.sh config/*.sh config/river-init
+          shellcheck -S warning build/*.sh session/*.sh tests/*.sh demo/*.sh config/*.sh config/river-init
 
   pins:
     name: pinned revisions
@@ -31,7 +31,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: versions.lock resolves upstream
-        run: scripts/verify-pins.sh
+        run: tests/verify-pins.sh
 
   shim:
     name: xlib-wayland (pinned)

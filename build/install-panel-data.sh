@@ -15,7 +15,7 @@
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/lib.sh"
 
-[ -d "$CDE_BUILD" ] || die "no CDE build tree at $CDE_BUILD; run scripts/build-cde.sh"
+[ -d "$CDE_BUILD" ] || die "no CDE build tree at $CDE_BUILD; run build/build-cde.sh"
 
 DTWM_DIR="$CDE_BUILD/programs/dtwm"
 TYPES_DIR="$CDE_BUILD/programs/types"
@@ -38,20 +38,20 @@ fi
 
 # Workspace Manager bridge: dtwm's workspace changes switch CoW's desks and
 # record the current workspace for the shim's synthetic WM window.
-if [ -f "$PROJECT_ROOT/scripts/cde-wsm-desk.sh" ]; then
-    install -D -m 0755 "$PROJECT_ROOT/scripts/cde-wsm-desk.sh" \
+if [ -f "$PROJECT_ROOT/session/cde-wsm-desk.sh" ]; then
+    install -D -m 0755 "$PROJECT_ROOT/session/cde-wsm-desk.sh" \
         "$CDE_PREFIX/bin/cde-wsm-desk"
     ok "installed cde-wsm-desk (Workspace Manager bridge)"
 fi
 
 # Build and install the CDE/Motif/X11 helper tools (cde-wsm, cde-confirm,
 # cde-palette-colours, xrdb).
-"$PROJECT_ROOT/scripts/build-tools.sh" --cde
+"$PROJECT_ROOT/build/build-tools.sh" --cde
 
 # Root-menu helpers: "Restart Workspace Manager..." and "Log out...".
 for h in cde-restart-dtwm.sh cde-logout.sh cde-toggle-frontpanel.sh cde-wsm-backdrop.sh cde-motif-apply.sh cde-session-save.sh cde-session-restore.sh cde-palette-watch.sh cde-cow-colours.sh; do
-    [ -f "$PROJECT_ROOT/scripts/$h" ] || continue
-    install -D -m 0755 "$PROJECT_ROOT/scripts/$h" \
+    [ -f "$PROJECT_ROOT/session/$h" ] || continue
+    install -D -m 0755 "$PROJECT_ROOT/session/$h" \
         "$CDE_ROOT/bin/$(basename "$h" .sh)"
 done
 ok "installed root-menu helpers (restart / logout)"
@@ -215,7 +215,7 @@ if ls "$TYPES_DIR"/*.dt >/dev/null 2>&1; then
     # names ("contains the following unrecognized field name and value:
     # \"Cannot\"...") and rejects the action -- the File Manager's double-click
     # then resolves no action.  Re-wrap every such run onto its own continuation
-    # line, then assert it (scripts/test-dt-database.sh) so a build regression
+    # line, then assert it (tests/test-dt-database.sh) so a build regression
     # cannot get as far as a session.
     python3 - "$CDE_ROOT/appconfig/types/C" "$CDE_ROOT/appconfig/types" <<'PY'
 import glob, os, re, sys
@@ -448,7 +448,7 @@ fi
 
 # 5. Help volumes.  DTHELPSEARCHPATH is $CDE_ROOT/help/%L/%T/%N%S with
 #    %T == "volumes", so the SDL volumes live in help[/<locale>]/volumes/.
-#    Build them with scripts/build-help.sh (needs ksh + nsgmls).
+#    Build them with build/build-help.sh (needs ksh + nsgmls).
 if ls "$CDE_BUILD/doc/help-sdl"/*.sdl >/dev/null 2>&1; then
     mkdir -p "$CDE_ROOT/help/volumes" "$CDE_ROOT/help/C/volumes"
     cp "$CDE_BUILD/doc/help-sdl"/*.sdl "$CDE_ROOT/help/volumes/"
@@ -465,11 +465,11 @@ if ls "$CDE_BUILD/doc/help-sdl"/*.sdl >/dev/null 2>&1; then
     done
     ok "installed $(ls "$CDE_ROOT/help/volumes"/*.sdl 2>/dev/null | wc -l) help volumes + graphics"
 else
-    warn "no help volumes built; run scripts/build-help.sh to install Help"
+    warn "no help volumes built; run build/build-help.sh to install Help"
 fi
 
 # 6. Information Manager.  dtinfo browses MMDB infolibs (built by
-#    scripts/build-infolib.sh), not the SDL help volumes dthelpview uses.
+#    build/build-infolib.sh), not the SDL help volumes dthelpview uses.
 #    Install the browser, its ToolTalk start helper and the cde infolib, and
 #    give the Front Panel's InfoManager button an action that runs it (the
 #    DtInfo ptype auto-start does not fire in this session).
@@ -492,7 +492,7 @@ if [ -x "$CDE_BUILD/programs/dtinfo/dtinfo/src/dtinfo" ]; then
         done
         ok "installed dtinfo + the cde infolib"
     else
-        warn "cde.dti not built; run scripts/build-infolib.sh for the InfoManager"
+        warn "cde.dti not built; run build/build-infolib.sh for the InfoManager"
     fi
     # Overlay action definitions (run programs we have locally instead of the
     # dtsession/ToolTalk services we do not run).

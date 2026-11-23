@@ -104,7 +104,7 @@ stage_prepare() {
     sed -e "s|@CDE_PREFIX@|$CDE_PREFIX|g" \
         -e "s|@CDE_ROOT@|$CDE_ROOT|g" \
         -e "s|@CPP@|$CPP_BIN|g" \
-        "$PROJECT_ROOT/config/cde-host.def.in" > "$CDE_BUILD/config/cf/host.def"
+        "$PROJECT_ROOT/build/cde-host.def.in" > "$CDE_BUILD/config/cf/host.def"
 
     # linux.cf defines CppCmd /lib/cpp unconditionally, after host.def is
     # read, so the generated Makefiles bake in a path that does not exist on

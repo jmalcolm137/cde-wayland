@@ -27,8 +27,8 @@ export CDE_PREFIX := $(PREFIX)
 export JOBS
 
 # Resolved exactly as the scripts resolve it (sibling checkout, else the cache).
-XLIB_WAYLAND ?= $(shell bash -c 'source scripts/lib.sh; printf %s "$$XLIB_WAYLAND"' 2>/dev/null)
-COW_SRC      ?= $(shell bash -c 'source scripts/lib.sh; printf %s "$$COW_SRC"' 2>/dev/null)
+XLIB_WAYLAND ?= $(shell bash -c 'source build/lib.sh; printf %s "$$XLIB_WAYLAND"' 2>/dev/null)
+COW_SRC      ?= $(shell bash -c 'source build/lib.sh; printf %s "$$COW_SRC"' 2>/dev/null)
 
 .PHONY: all help fetch shim cow tools cde test test-shim test-session lint verify-pins clean
 
@@ -41,30 +41,30 @@ all:
 	@$(MAKE) --no-print-directory tools
 	@$(MAKE) --no-print-directory cde
 	@printf '\nInstalled under %s\n' "$(PREFIX)"
-	@printf 'Start a session with: CDE_PREFIX=%s scripts/run-session.sh\n' "$(PREFIX)"
+	@printf 'Start a session with: CDE_PREFIX=%s session/run-session.sh\n' "$(PREFIX)"
 
 help:
 	@sed -n '1,17p' Makefile | sed 's/^# \{0,1\}//'
 
 fetch:
-	scripts/fetch-sources.sh
+	build/fetch-sources.sh
 
 shim:
-	scripts/build-shim.sh
+	build/build-shim.sh
 
 cow:
-	scripts/build-cow.sh $(if $(filter 1,$(WITH_RIVER)),--with-river)
+	build/build-cow.sh $(if $(filter 1,$(WITH_RIVER)),--with-river)
 
 tools:
-	scripts/build-tools.sh
+	build/build-tools.sh
 
 cde:
-	scripts/build-cde.sh all
-	scripts/build-cde.sh programs
-	scripts/build-cde.sh doc
-	scripts/build-help.sh
-	scripts/build-cde.sh panel
-	scripts/build-cde.sh install
+	build/build-cde.sh all
+	build/build-cde.sh programs
+	build/build-cde.sh doc
+	build/build-help.sh
+	build/build-cde.sh panel
+	build/build-cde.sh install
 
 test: test-shim
 
@@ -76,18 +76,18 @@ test-shim:
 	meson test -C "$(XLIB_WAYLAND)/build" --print-errorlogs
 
 test-session:
-	CDE_PREFIX="$(PREFIX)" scripts/test-nested.sh
+	CDE_PREFIX="$(PREFIX)" tests/test-nested.sh
 
 lint:
-	@for f in scripts/*.sh; do bash -n "$$f" || exit 1; done
+	@for f in build/*.sh session/*.sh tests/*.sh demo/*.sh; do bash -n "$$f" || exit 1; done
 	@for f in config/*.sh config/river-init; do sh -n "$$f" || exit 1; done
 	@if command -v shellcheck >/dev/null 2>&1; then \
-	    shellcheck -S warning scripts/*.sh config/*.sh config/river-init; \
+	    shellcheck -S warning build/*.sh session/*.sh tests/*.sh demo/*.sh config/*.sh config/river-init; \
 	  else echo "shellcheck not installed; skipped"; fi
-	scripts/test-dt-database.sh
+	tests/test-dt-database.sh
 
 verify-pins:
-	scripts/verify-pins.sh
+	tests/verify-pins.sh
 
 clean:
 	@echo "removing build trees (sources are kept)"

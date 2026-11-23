@@ -7,7 +7,7 @@
 # doc/C/cde.dti, which install-panel-data.sh then installs under
 # appconfig/infolib/<locale>/cde.dti.
 #
-# Needs a CDE build tree (scripts/build-cde.sh libs) and nsgmls (opensp).
+# Needs a CDE build tree (build/build-cde.sh libs) and nsgmls (opensp).
 #
 # NOTE: this cannot run as shipped.  dtinfogen requires dbdrv, NCFGen,
 # MixedGen, NodeParser, StyleUpdate and valBase, which are NOT part of the CDE
@@ -17,7 +17,7 @@
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/lib.sh"
 
-[ -d "$CDE_BUILD" ] || die "no CDE build tree at $CDE_BUILD; run scripts/build-cde.sh"
+[ -d "$CDE_BUILD" ] || die "no CDE build tree at $CDE_BUILD; run build/build-cde.sh"
 # The documentation tools run from the build tree, before `make cde`
 # installs the libraries; point the loader at the build tree's libs.
 export LD_LIBRARY_PATH="$CDE_BUILD/exports/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"

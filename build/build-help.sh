@@ -18,7 +18,7 @@
 set -euo pipefail
 source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/lib.sh"
 
-[ -d "$CDE_BUILD" ] || die "no CDE build tree at $CDE_BUILD; run scripts/build-cde.sh"
+[ -d "$CDE_BUILD" ] || die "no CDE build tree at $CDE_BUILD; run build/build-cde.sh"
 
 DB="$CDE_BUILD/programs/dtdocbook"
 DBK="$DB/doc2sdl"
@@ -29,8 +29,8 @@ HTAG2="$CDE_BUILD/programs/dthelp/parser/pass2/htag2/dthelp_htag2"
 have() { command -v "$1" >/dev/null 2>&1; }
 have ksh    || die "ksh is required by dtdocbook (install ksh)"
 have nsgmls || die "nsgmls (OpenSP) is required to parse the help SGML (install opensp)"
-[ -x "$DBK/dtdocbook" ] || die "dtdocbook not built; run scripts/build-cde.sh"
-[ -x "$DB/instant/instant" ] || die "instant not built; run scripts/build-cde.sh"
+[ -x "$DBK/dtdocbook" ] || die "dtdocbook not built; run build/build-cde.sh"
+[ -x "$DB/instant/instant" ] || die "instant not built; run build/build-cde.sh"
 
 # The final SDL enhancer/compressor is built from the pass2 parser.
 if [ ! -x "$HTAG2" ]; then

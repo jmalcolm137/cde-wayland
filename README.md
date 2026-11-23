@@ -5,15 +5,12 @@
 Run the **Common Desktop Environment** natively on Wayland:
 
 * Motif applications speak Wayland through
-  [xlib-wayland](../xlib-wayland), a Wayland-native, ABI-compatible `libX11`.
-  No X server, no Xwayland.
+  [xlib-wayland](https://github.com/jmalcolm137/xlib-wayland), a Wayland-native,
+  ABI-compatible `libX11`. No X server, no Xwayland.
 * Window management and decorations come from
   [CoW](https://codeberg.org/cow-wm/cow), a stacking WM running on the
-  [River](https://codeberg.org/river/river) compositor.
+  [River](https://codeberg.org/river/river) compositor (built unpatched).
 * Everything else is stock [CDE](https://github.com/lkujaw/cde).
-
-See [DESIGN.md](DESIGN.md) for the architecture, the constraints of an
-in-process Xlib, the CDE component strategy, and the milestone plan.
 
 ## Demo
 
@@ -23,20 +20,52 @@ The Workspace Menu starts the Terminal, `dtcalc` is launched from it, the File
 Manager opens a text file on a double-click, and dragging `pic2.xpm` onto the
 Front Panel's Icon Editor launches `dticon`.
 
-## Try It
+## Quick Start
+
+Fetch the pinned sources, build, and install everything under
+`$HOME/.local/cde-wayland` (no root required):
+
+```sh
+git clone https://github.com/jmalcolm137/cde-wayland
+cd cde-wayland
+make
+```
 
 Start a session (needs a seat/DRM; normally from a TTY):
 
 ```sh
-scripts/run-session.sh
+session/run-session.sh
 ```
 
 Inside another Wayland session, run it nested and drive it with the smoke test:
 
 ```sh
-scripts/test-nested.sh          # start + smoke-test, leaves it running
-scripts/test-nested.sh --stop   # stop it
+tests/test-nested.sh          # start + smoke-test, leaves it running
+tests/test-nested.sh --stop   # stop it
 ```
+
+## Documentation
+
+* [docs/DESIGN.md](docs/DESIGN.md) — architecture, in-process Xlib constraints,
+  and component strategy
+* [docs/WORKSPACE-MANAGER.md](docs/WORKSPACE-MANAGER.md) — Front Panel, CoW
+  desks, backdrops, and `DtWsm` integration
+* [docs/WAYLAND-ADVANTAGES.md](docs/WAYLAND-ADVANTAGES.md) — what improves over
+  classic X11 CDE
+* [patches/README.md](patches/README.md) — the CDE patch overlays and licensing
+
+## Repository Layout
+
+| Directory | Contents |
+|---|---|
+| `build/` | source fetch, build scripts, `imake` overlay (`cde-host.def.in`) |
+| `session/` | session launcher (`run-session.sh`) and runtime `cde-*` helpers |
+| `config/` | runtime CoW, River, Xresources, backdrop, and `.dt` configs |
+| `tools/` | C helper programs (`tt-portmapper`, `xrdb`, `cde-wsm`, `cde-confirm`, `cde-palette-colours`) |
+| `patches/` | minimal CDE source overlays (`LGPL-2.0-or-later`) |
+| `tests/` | smoke tests, `.dt` database guard, and pin verification |
+| `demo/` | demo recording scripts, virtual input helpers, and sample assets |
+| `docs/` | architecture notes and demo media |
 
 ### Prerequisites
 

@@ -7,7 +7,7 @@
 # Run by `make verify-pins` and by CI on every push.  It works in throwaway
 # repositories, so it neither needs nor disturbs the build cache.
 set -euo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/lib.sh"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)/build/lib.sh"
 # shellcheck source=/dev/null
 source "$PROJECT_ROOT/versions.lock"
 

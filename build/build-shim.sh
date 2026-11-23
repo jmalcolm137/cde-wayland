@@ -10,13 +10,13 @@ printf '    prefix : %s\n' "$CDE_PREFIX"
 
 [ -f "$XLIB_WAYLAND/meson.build" ] || die \
 "xlib-wayland not found at $XLIB_WAYLAND
-Run scripts/fetch-sources.sh first (it clones $XLIB_WAYLAND_REPO), or set
+Run build/fetch-sources.sh first (it clones $XLIB_WAYLAND_REPO), or set
 XLIB_WAYLAND to an existing checkout."
 
 require_cmd meson
 require_cmd ninja
 
-# The shim's own scripts/build-stack.sh reads MW_PREFIX; keep one prefix.
+# The shim's own build/build-stack.sh reads MW_PREFIX; keep one prefix.
 export MW_PREFIX="$CDE_PREFIX"
 
 log "meson: configure + install libX11/libXft into $CDE_PREFIX"
@@ -27,6 +27,6 @@ ninja -C "$XLIB_WAYLAND/build"
 meson install -C "$XLIB_WAYLAND/build"
 
 log "building libXt + Open Motif against the shim"
-"$XLIB_WAYLAND/scripts/build-stack.sh" --prefix="$CDE_PREFIX"
+"$XLIB_WAYLAND/build/build-stack.sh" --prefix="$CDE_PREFIX"
 
 ok "shim + Xt + Motif installed in $CDE_PREFIX"

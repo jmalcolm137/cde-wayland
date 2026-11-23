@@ -10,7 +10,7 @@
 # and leaves the panel running.  Requires river and cow on PATH and an outer
 # Wayland session for the nested compositor (see README.md).
 set -euo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/lib.sh"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)/build/lib.sh"
 
 LOG="${CDE_TEST_LOG:-/tmp/cde-wayland-test.log}"
 SMOKE_LOG="${CDE_WSM_SMOKE_LOG:-/tmp/cde-wsm-smoke.log}"
@@ -37,9 +37,9 @@ if [ "${1:-}" = "--stop" ]; then
 fi
 
 require_cmd river
-command -v cow >/dev/null 2>&1 || die "cow not found; run scripts/build-cow.sh"
+command -v cow >/dev/null 2>&1 || die "cow not found; run build/build-cow.sh"
 
-export CDE_STARTUP_HOOK="$PROJECT_ROOT/scripts/wsm-smoke.sh"
+export CDE_STARTUP_HOOK="$PROJECT_ROOT/tests/wsm-smoke.sh"
 export CDE_WSM_SMOKE_LOG="$SMOKE_LOG"
 export CDE_NESTED=1
 
@@ -47,10 +47,10 @@ log "starting a nested session (session log: $LOG)"
 rm -f "$SMOKE_LOG" "$LOG"
 mkdir -p "$(dirname "$NESTED_PID_FILE")" 2>/dev/null || true
 if command -v setsid >/dev/null 2>&1; then
-    setsid "$PROJECT_ROOT/scripts/run-session.sh" --nested >>"$LOG" 2>&1 &
+    setsid "$PROJECT_ROOT/session/run-session.sh" --nested >>"$LOG" 2>&1 &
     printf '%s\n' "$!" >"$NESTED_PID_FILE"
 else
-    ( "$PROJECT_ROOT/scripts/run-session.sh" --nested >>"$LOG" 2>&1 & )
+    ( "$PROJECT_ROOT/session/run-session.sh" --nested >>"$LOG" 2>&1 & )
 fi
 
 # Wait for the smoke test to finish (it prints PASS/FAIL as its last line).

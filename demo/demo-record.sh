@@ -39,7 +39,7 @@ WAYLAND_DISPLAY="${WAYLAND_DISPLAY:?set WAYLAND_DISPLAY to the session composito
 export WAYLAND_DISPLAY
 BIN="$CDE_PREFIX/bin"
 # The storyboard's file-manager directory (the icons it opens and drags).
-DEMO_DIR="${DEMO_DIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)/demo}"
+DEMO_DIR="${DEMO_DIR:-$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)}"
 export DEMO_DIR
 
 out=demo.gif

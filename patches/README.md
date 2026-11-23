@@ -1,6 +1,6 @@
 # Patch overlays
 
-Small diffs applied by [`../scripts/build-cde.sh`](../scripts/build-cde.sh) to a
+Small diffs applied by [`../build/build-cde.sh`](../build/build-cde.sh) to a
 pristine CDE source tree:
 
     patch -p1 --forward --batch -d "$CDE_BUILD" < <patch>

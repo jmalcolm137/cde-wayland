@@ -21,12 +21,12 @@
 # dt_rejoin()); this test fails if any are left, so a build regression cannot
 # get as far as a session.
 #
-#   scripts/test-dt-database.sh [TYPES_DIR]
+#   tests/test-dt-database.sh [TYPES_DIR]
 #
 set -euo pipefail
 here="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
-# shellcheck source=lib.sh
-source "$here/lib.sh"
+# shellcheck source=../build/lib.sh
+source "$here/../build/lib.sh"
 
 dir="${1:-$CDE_ROOT/appconfig/types/C}"
 [ -d "$dir" ] || die "no .dt directory: $dir"

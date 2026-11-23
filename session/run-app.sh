@@ -12,7 +12,7 @@
 #   CDE_FRAME_OUT      PNG path (default ./APP.png)
 #   CDE_INPUT          input script for the compositor (optional)
 set -euo pipefail
-source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)/lib.sh"
+source "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)/build/lib.sh"
 
 [ "$#" -ge 1 ] || die "usage: run-app.sh APP [ARG...]"
 app="$1"; shift || true
@@ -30,7 +30,7 @@ else
 fi
 
 HC="${HEADLESS_COMPOSITOR:-$XLIB_WAYLAND/build/headless-compositor}"
-[ -x "$HC" ] || die "headless compositor not built; run scripts/build-shim.sh ($HC)"
+[ -x "$HC" ] || die "headless compositor not built; run build/build-shim.sh ($HC)"
 
 runtime="$(mktemp -d "${TMPDIR:-/tmp}/cde-hc.XXXXXX")"
 sock="cde-$$"
