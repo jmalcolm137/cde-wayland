@@ -20,5 +20,8 @@ require_cmd make
 require_cmd "${CC:-gcc}"
 
 log "building cde-wayland tools ($TARGET)"
-make --no-print-directory -C "$PROJECT_ROOT/tools" PREFIX="$CDE_PREFIX" "$TARGET"
+cde_build=""
+[ -d "$CDE_BUILD/exports/include" ] && cde_build="$CDE_BUILD"
+make --no-print-directory -C "$PROJECT_ROOT/tools" PREFIX="$CDE_PREFIX" \
+    CDE_BUILD="$cde_build" "$TARGET"
 ok "installed cde-wayland tools ($TARGET) in $CDE_PREFIX/bin"
