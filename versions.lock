@@ -7,9 +7,9 @@
 
 # xlib-wayland — the Wayland libX11 shim.  All shim accommodations for CDE are
 # made in THIS repository, not here; we only consume it.
-# main, 2026-11-24 (second security pass: wire parsing, memory safety, IPC).
+# main, 2026-11-26 (security passes plus regression tests).
 XLIB_WAYLAND_REPO=https://github.com/jmalcolm137/xlib-wayland.git
-XLIB_WAYLAND_REF=3c17496b7dbe769f3c77cd816da3433b2cc79882
+XLIB_WAYLAND_REF=494a247818e8791a2e87a856a97efb8e39472407
 # Requires at least:
 #   b9a3142  XOpenDisplay reports an X display string (DtSvc parses it)
 #   a8c2a3e  Xmb/XwcTextExtents fill ink and logical independently
